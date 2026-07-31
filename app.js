@@ -7,6 +7,7 @@
   const Timing = window.PracticeTiming;
   const Challenge = window.FingeringChallenge;
   const Charts = window.FingeringCharts;
+  const Shell = window.ChallengeShell;
   const UiSounds = window.UiSounds;
   const A4_HZ = Band.A4_HZ;
 
@@ -110,14 +111,6 @@
     flowLayer: "home",
     flowBusy: false,
     pickMode: "practice", // practice | challenge
-  };
-
-  const challengeState = {
-    instrumentId: "flute",
-    session: null,
-    qIndex: 0,
-    score: 0,
-    awaitingNext: false,
   };
 
   const FLOW_MS = 420;
@@ -1177,170 +1170,81 @@
     resumeAudioAfterForeground();
   });
 
-  /** —— 指法挑戰 —— */
-  function challengeInstrument() {
-    return Band.getById(challengeState.instrumentId);
-  }
-
-  function challengeChartHtml(note) {
-    const inst = challengeInstrument();
+  /** —— 指法挑戰（ChallengeShell + render adapter） —— */
+  function challengeChartHtml(inst, note) {
     if (!Charts || typeof Charts.chartHtml !== "function" || !note) {
       return `<p class="challenge-option-fallback">${(note && note.label) || ""}</p>`;
     }
     return Charts.chartHtml(inst, note) || `<p class="challenge-option-fallback">${note.label || ""}</p>`;
   }
 
-  function showChallengePhase(phase) {
-    if (els.challengeIdle) els.challengeIdle.hidden = phase !== "idle";
-    if (els.challengePlay) els.challengePlay.hidden = phase !== "play";
-    if (els.challengeResult) els.challengeResult.hidden = phase !== "result";
-  }
-
-  function resetChallengeUiToIdle() {
-    challengeState.session = null;
-    challengeState.qIndex = 0;
-    challengeState.score = 0;
-    challengeState.awaitingNext = false;
-    const inst = challengeInstrument();
-    if (els.challengeTitle) els.challengeTitle.textContent = `${inst.nameZh}指法挑戰`;
-    if (els.challengeInstrumentName) {
-      els.challengeInstrumentName.textContent = `${inst.nameZh}（${inst.name}）`;
-    }
-    if (els.challengeFeedback) els.challengeFeedback.hidden = true;
-    if (els.challengeFeedbackText) els.challengeFeedbackText.textContent = "";
-    if (els.challengeReveal) els.challengeReveal.innerHTML = "";
-    if (els.challengeOptions) els.challengeOptions.innerHTML = "";
-    if (els.challengeProgress) els.challengeProgress.textContent = "";
-    if (els.challengeScore) els.challengeScore.textContent = "";
-    if (els.challengeScoreNote) els.challengeScoreNote.textContent = "";
-    if (els.btnChallengeNext) els.btnChallengeNext.textContent = "下一題";
-    showChallengePhase("idle");
-  }
-
-  function openChallengeForInstrument(instId) {
-    stopTuner();
-    stopPlayback(false);
-    challengeState.instrumentId = instId;
-    resetChallengeUiToIdle();
-    try {
-      ensureAudioSync();
-      unlockAudioBuffer();
-    } catch (_) {}
-    showLayer("challenge");
-  }
-
-  function playChallengePromptTone() {
-    const q = challengeState.session?.questions?.[challengeState.qIndex];
-    if (!q?.prompt) return;
-    try {
-      ensureAudioSync();
-      unlockAudioBuffer();
-      playPracticeTone(midiToHz(q.prompt.concertMidi), 0.85);
-    } catch (_) {}
-  }
-
-  function renderChallengeQuestion() {
-    const session = challengeState.session;
-    if (!session) return;
-    const q = session.questions[challengeState.qIndex];
-    if (!q) return;
-    challengeState.awaitingNext = false;
-    if (els.challengeFeedback) els.challengeFeedback.hidden = true;
-    if (els.challengeReveal) els.challengeReveal.innerHTML = "";
-    if (els.challengeProgress) {
-      els.challengeProgress.textContent = `${challengeState.qIndex + 1} / ${session.questions.length}`;
-    }
-    const writtenLabel = q.prompt.writtenNameDisplay || Band.displayPitchName(q.prompt.writtenName);
-    if (els.challengeWritten) {
-      els.challengeWritten.innerHTML = `<span class="pitch-name">${writtenLabel}</span><span class="solfege">(${q.prompt.solfege}, ${q.prompt.jianpu})</span>`;
+  function renderChallengeView(vm) {
+    if (!vm) return;
+    if (els.challengeIdle) els.challengeIdle.hidden = vm.phase !== "idle";
+    if (els.challengePlay) els.challengePlay.hidden = vm.phase !== "play";
+    if (els.challengeResult) els.challengeResult.hidden = vm.phase !== "result";
+    if (els.challengeTitle) els.challengeTitle.textContent = vm.title || "";
+    if (els.challengeInstrumentName) els.challengeInstrumentName.textContent = vm.instrumentLabel || "";
+    if (els.challengeProgress) els.challengeProgress.textContent = vm.progress || "";
+    if (els.challengeWritten) els.challengeWritten.innerHTML = vm.writtenHtml || "";
+    if (els.btnChallengeNext) els.btnChallengeNext.textContent = vm.nextLabel || "下一題";
+    if (els.challengeScore) els.challengeScore.textContent = vm.scoreText || "";
+    if (els.challengeScoreNote) els.challengeScoreNote.textContent = vm.scoreNote || "";
+    const fb = vm.feedback || {};
+    if (els.challengeFeedback) els.challengeFeedback.hidden = fb.hidden !== false;
+    if (els.challengeFeedbackText) els.challengeFeedbackText.textContent = fb.text || "";
+    if (els.challengeReveal) {
+      if (fb.revealHtml) {
+        els.challengeReveal.innerHTML = `<div class="challenge-option-chart">${fb.revealHtml}</div><span class="challenge-option-label">${fb.revealLabel || ""}</span>`;
+      } else {
+        els.challengeReveal.innerHTML = "";
+      }
     }
     if (els.challengeOptions) {
       els.challengeOptions.innerHTML = "";
-      q.options.forEach((note, i) => {
+      (vm.options || []).forEach((opt) => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "challenge-option";
+        if (opt.isCorrect) btn.classList.add("is-correct");
+        if (opt.isWrong) btn.classList.add("is-wrong");
         btn.setAttribute("role", "listitem");
-        btn.dataset.index = String(i);
-        // 選項只顯示指法圖，避免文字標籤（尤其鋼琴）洩題
-        btn.innerHTML = `<div class="challenge-option-chart">${challengeChartHtml(note)}</div>`;
-        btn.addEventListener("click", () => onChallengeAnswer(i));
+        btn.dataset.index = String(opt.index);
+        btn.disabled = !!opt.disabled;
+        btn.innerHTML = `<div class="challenge-option-chart">${opt.chartHtml || ""}</div>`;
+        btn.addEventListener("click", () => challengeShell.answer(opt.index));
         els.challengeOptions.appendChild(btn);
       });
     }
-    showChallengePhase("play");
-    playChallengePromptTone();
   }
 
-  function onChallengeAnswer(chosenIndex) {
-    if (challengeState.awaitingNext) return;
-    const q = challengeState.session?.questions?.[challengeState.qIndex];
-    if (!q) return;
-    challengeState.awaitingNext = true;
-    const ok = Challenge.grade(q, chosenIndex);
-    playUiSound(ok ? "correct" : "wrong");
-    if (ok) challengeState.score += 1;
-    if (els.challengeOptions) {
-      els.challengeOptions.querySelectorAll(".challenge-option").forEach((btn, i) => {
-        btn.disabled = true;
-        if (i === q.correctIndex) btn.classList.add("is-correct");
-        if (i === chosenIndex && !ok) btn.classList.add("is-wrong");
-      });
-    }
-    if (ok) {
-      if (els.challengeFeedbackText) els.challengeFeedbackText.textContent = "答對了！";
-      if (els.challengeReveal) els.challengeReveal.innerHTML = "";
-      if (els.challengeFeedback) els.challengeFeedback.hidden = false;
-      if (els.btnChallengeNext) els.btnChallengeNext.textContent =
-        challengeState.qIndex + 1 >= challengeState.session.questions.length ? "看結果" : "下一題";
-      return;
-    }
-    if (els.challengeFeedbackText) els.challengeFeedbackText.textContent = "答錯了，正確指法是：";
-    if (els.challengeReveal) {
-      els.challengeReveal.innerHTML = `<div class="challenge-option-chart">${challengeChartHtml(
-        q.prompt
-      )}</div><span class="challenge-option-label">${q.prompt.label || ""}</span>`;
-    }
-    if (els.challengeFeedback) els.challengeFeedback.hidden = false;
-    if (els.btnChallengeNext) {
-      els.btnChallengeNext.textContent =
-        challengeState.qIndex + 1 >= challengeState.session.questions.length ? "看結果" : "下一題";
-    }
-  }
-
-  function advanceChallenge() {
-    if (!challengeState.session) return;
-    if (challengeState.qIndex + 1 >= challengeState.session.questions.length) {
-      finishChallenge();
-      return;
-    }
-    challengeState.qIndex += 1;
-    renderChallengeQuestion();
-  }
-
-  function finishChallenge() {
-    const total = challengeState.session?.questions?.length || 5;
-    if (els.challengeScore) els.challengeScore.textContent = `${challengeState.score} / ${total}`;
-    if (els.challengeScoreNote) {
-      els.challengeScoreNote.textContent =
-        challengeState.score === total ? "全對！太厲害了" : "再練一次音階指法會更熟喔";
-    }
-    showChallengePhase("result");
-  }
-
-  function startChallengeSession() {
-    stopTuner();
-    stopPlayback(false);
-    const inst = challengeInstrument();
-    challengeState.session = Challenge.buildSession(inst, { questionCount: 5, optionCount: 3 });
-    challengeState.qIndex = 0;
-    challengeState.score = 0;
-    try {
-      ensureAudioSync();
-      unlockAudioBuffer();
-    } catch (_) {}
-    renderChallengeQuestion();
-  }
+  const challengeShell = Shell.create({
+    getInstrument: (id) => Band.getById(id),
+    buildSession: (inst, opts) => Challenge.buildSession(inst, opts),
+    grade: (q, i) => Challenge.grade(q, i),
+    chartHtml: (inst, note) => challengeChartHtml(inst, note),
+    displayPitchName: (name) => Band.displayPitchName(name),
+    render: (vm) => renderChallengeView(vm),
+    haltAudio: () => {
+      stopTuner();
+      stopPlayback(false);
+    },
+    goChallenge: () => {
+      try {
+        ensureAudioSync();
+        unlockAudioBuffer();
+      } catch (_) {}
+      showLayer("challenge");
+    },
+    playCue: (kind) => playUiSound(kind),
+    playTone: (concertMidi) => {
+      try {
+        ensureAudioSync();
+        unlockAudioBuffer();
+        playPracticeTone(midiToHz(concertMidi), 0.85);
+      } catch (_) {}
+    },
+  });
 
   function openInstrumentPicker(mode) {
     state.pickMode = mode === "challenge" ? "challenge" : "practice";
@@ -1508,7 +1412,7 @@
       btn.addEventListener("click", () => {
         playUiSound("choose");
         if (state.pickMode === "challenge") {
-          openChallengeForInstrument(inst.id);
+          challengeShell.open(inst.id);
           return;
         }
         stopTuner();
@@ -1586,26 +1490,21 @@
   if (els.btnChallengeStart) {
     els.btnChallengeStart.addEventListener("click", () => {
       playUiSound("startGame");
-      startChallengeSession();
+      challengeShell.start();
     });
   }
   if (els.btnChallengeReplay) {
-    els.btnChallengeReplay.addEventListener("click", () => playChallengePromptTone());
+    els.btnChallengeReplay.addEventListener("click", () => challengeShell.replay());
   }
   if (els.btnChallengeNext) {
     els.btnChallengeNext.addEventListener("click", () => {
-      const session = challengeState.session;
-      const atLast =
-        session && challengeState.qIndex + 1 >= session.questions.length;
-      if (atLast) playUiSound("finish");
-      advanceChallenge();
+      challengeShell.advance();
     });
   }
   if (els.btnChallengeAgain) {
     els.btnChallengeAgain.addEventListener("click", () => {
       playUiSound("startGame");
-      resetChallengeUiToIdle();
-      startChallengeSession();
+      challengeShell.start();
     });
   }
   if (els.btnChallengeToMenu) {

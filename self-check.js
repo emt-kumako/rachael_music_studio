@@ -12,17 +12,20 @@ const instrumentsSrc = fs.readFileSync(path.join(root, "instruments.js"), "utf8"
 const timingSrc = fs.readFileSync(path.join(root, "practice-timing.js"), "utf8");
 const challengeSrc = fs.readFileSync(path.join(root, "fingering-challenge.js"), "utf8");
 const chartsSrc = fs.readFileSync(path.join(root, "fingering-charts.js"), "utf8");
+const shellSrc = fs.readFileSync(path.join(root, "challenge-shell.js"), "utf8");
 const uiSoundsSrc = fs.readFileSync(path.join(root, "ui-sounds.js"), "utf8");
 const sandbox = { window: {}, console };
 vm.runInNewContext(instrumentsSrc, sandbox);
 vm.runInNewContext(timingSrc, sandbox);
 vm.runInNewContext(challengeSrc, sandbox);
 vm.runInNewContext(chartsSrc, sandbox);
+vm.runInNewContext(shellSrc, sandbox);
 vm.runInNewContext(uiSoundsSrc, sandbox);
 const Band = sandbox.window.BandInstruments;
 const Timing = sandbox.window.PracticeTiming;
 const Challenge = sandbox.window.FingeringChallenge;
 const Charts = sandbox.window.FingeringCharts;
+const Shell = sandbox.window.ChallengeShell;
 const UiSounds = sandbox.window.UiSounds;
 
 let passed = 0;
@@ -211,7 +214,8 @@ check("app 播放 UI 音效", /function playUiSound/.test(app) && /playUiSound\(
       return distinct === others.length || distinct >= 1;
     })
   );
-  check("app 綁定挑戰流程", /openChallengeForInstrument|startChallengeSession|FingeringChallenge/.test(app));
+  check("app 綁定挑戰流程", /ChallengeShell|challengeShell\.(open|start|answer|advance)/.test(app));
+  check("app 無舊挑戰函式", !/openChallengeForInstrument|captureFingeringHtml|challengeState/.test(app));
   const q0 = session.questions[0];
   check("grade 正解為 true", Challenge.grade(q0, q0.correctIndex) === true);
   check(
@@ -225,6 +229,79 @@ check("app 播放 UI 音效", /function playUiSound/.test(app) && /playUiSound\(
       s.questions.length === 5 && s.questions.every((q) => q.options.length === 3)
     );
   }
+
+  check("載入 ChallengeShell", !!Shell && typeof Shell.create === "function");
+  check("index 載入 challenge-shell.js", /challenge-shell\.js/.test(html));
+  check("CONTEXT 有 ChallengeShell", /## ChallengeShell/.test(fs.readFileSync(path.join(root, "CONTEXT.md"), "utf8")));
+
+  (() => {
+    const renders = [];
+    const cues = [];
+    const tones = [];
+    let halted = 0;
+    let went = 0;
+    let shellRngSeq = 0;
+    const shellRng = () => {
+      shellRngSeq += 1;
+      return (shellRngSeq * 0.17) % 1;
+    };
+    const shell = Shell.create({
+      getInstrument: (id) => Band.getById(id),
+      buildSession: (inst, opts) => Challenge.buildSession(inst, { ...opts, rng: shellRng }),
+      grade: (q, i) => Challenge.grade(q, i),
+      chartHtml: () => "<svg class='ww-svg'></svg>",
+      displayPitchName: (n) => n || "",
+      render: (vm) => renders.push(JSON.parse(JSON.stringify(vm))),
+      haltAudio: () => {
+        halted += 1;
+      },
+      goChallenge: () => {
+        went += 1;
+      },
+      playCue: (k) => cues.push(k),
+      playTone: (midi) => tones.push(midi),
+    });
+    shell.open("flute");
+    check("Shell open → idle", renders[renders.length - 1].phase === "idle" && halted === 1 && went === 1);
+    check("Shell open 標題", /長笛指法挑戰/.test(renders[renders.length - 1].title || ""));
+    shell.start();
+    check("Shell start → play", renders[renders.length - 1].phase === "play");
+    check("Shell start 三選項", (renders[renders.length - 1].options || []).length === 3);
+    check("Shell start 播題音", tones.length >= 1);
+    const q = shell._state.session.questions[0];
+    const bad = (q.correctIndex + 1) % 3;
+    shell.answer(bad);
+    const afterWrong = renders[renders.length - 1];
+    check("Shell 答錯 cue", cues[cues.length - 1] === "wrong");
+    check(
+      "Shell 答錯 feedback",
+      afterWrong.feedback.hidden === false && /答錯/.test(afterWrong.feedback.text || "")
+    );
+    check("Shell 答錯 awaitingNext", afterWrong.awaitingNext === true);
+    shell.answer(q.correctIndex);
+    check("Shell 重複作答忽略", cues.filter((c) => c === "wrong").length === 1);
+    shell.advance();
+    check(
+      "Shell advance 下一題",
+      shell._state.qIndex === 1 && renders[renders.length - 1].phase === "play"
+    );
+    while (shell._state.qIndex < 4) {
+      const qq = shell._state.session.questions[shell._state.qIndex];
+      shell.answer(qq.correctIndex);
+      shell.advance();
+    }
+    const lastQ = shell._state.session.questions[4];
+    shell.answer(lastQ.correctIndex);
+    shell.advance();
+    const resultVm = renders[renders.length - 1];
+    check("Shell 最後 advance → result", resultVm.phase === "result");
+    check("Shell finish cue", cues.includes("finish"));
+    check("Shell 結果分數格式", /^\d+ \/ 5$/.test(resultVm.scoreText || ""));
+    shell.replay();
+    check("Shell result 後 replay 不炸", true);
+    shell.reset();
+    check("Shell reset → idle", renders[renders.length - 1].phase === "idle");
+  })();
 })();
 
 check("無頻率欄", !/id="freqDisplay"/.test(html) && !/頻率/.test(html.split("footer")[0]));

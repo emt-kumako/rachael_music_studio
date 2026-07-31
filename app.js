@@ -8,8 +8,12 @@
   const Challenge = window.FingeringChallenge;
   const Charts = window.FingeringCharts;
   const Shell = window.ChallengeShell;
+  const AppFlow = window.Flow;
   const UiSounds = window.UiSounds;
   const A4_HZ = Band.A4_HZ;
+
+  /** Assigned after adapters exist; ChallengeShell closes over this. */
+  let appFlow = null;
 
   const els = {
     instrument: document.getElementById("instrument"),
@@ -113,7 +117,7 @@
     pickMode: "practice", // practice | challenge
   };
 
-  const FLOW_MS = 420;
+  const FLOW_TRANSITION_MS = 420;
 
   /** —— Audio —— */
   let audioCtx = null;
@@ -926,19 +930,6 @@
     });
   }
 
-  function scrollPracticeTitleToTop() {
-    // 對齊練習頁頂部（含返回列），避免只捲標題而留下大段上方空白
-    try {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    } catch (_) {
-      window.scrollTo(0, 0);
-    }
-    const topEl = els.layerPractice || els.appTitle;
-    if (topEl && typeof topEl.scrollIntoView === "function") {
-      topEl.scrollIntoView({ block: "start", inline: "nearest", behavior: "auto" });
-    }
-  }
-
   /** —— Playback —— */
   function buildSequence() {
     return Timing.buildSequence(currentNotes().length, els.direction.value);
@@ -1246,7 +1237,7 @@
         ensureAudioSync();
         unlockAudioBuffer();
       } catch (_) {}
-      showLayer("challenge");
+      return appFlow.go("challenge");
     },
     playCue: (kind) => playUiSound(kind),
     playTone: (concertMidi) => {
@@ -1278,6 +1269,14 @@
         challenge: els.layerChallenge,
       }[name] || null
     );
+  }
+
+  function scrollDocumentTop() {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    } catch (_) {
+      window.scrollTo(0, 0);
+    }
   }
 
   function canEmbedYouTube() {
@@ -1365,54 +1364,40 @@
     return showLayer("basics");
   }
 
+  appFlow = AppFlow.create({
+    initialLayer: "home",
+    transitionMs: FLOW_TRANSITION_MS,
+    getLayer: (name) => layerEl(name),
+    setFlowAttr: (name) => {
+      document.body.dataset.flow = name;
+    },
+    syncState: ({ layer, busy }) => {
+      state.flowLayer = layer;
+      state.flowBusy = busy;
+    },
+    haltPracticeAudio: () => {
+      stopTuner();
+      stopPlayback(false);
+    },
+    fadeHomeBgm: () => fadeOutHomeBgm(HOME_BGM.exitFadeSec),
+    pauseBasics: () => pauseBasicsVideos(),
+    prepareHomeEnter: () => {
+      if (homeGatePassed) blankHomeHeroForReplay();
+    },
+    onEnterHome: () => {
+      if (!homeGatePassed) {
+        if (els.homeGate) els.homeGate.hidden = false;
+        if (els.homeHero) els.homeHero.hidden = true;
+      } else {
+        replayHomeEntranceBlankThenFade();
+      }
+    },
+    scrollDocumentTop: () => scrollDocumentTop(),
+  });
+
+  /** 相容別名：對外／舊呼叫仍可用 showLayer */
   function showLayer(name) {
-    if (state.flowBusy || state.flowLayer === name) return Promise.resolve();
-    const next = layerEl(name);
-    const prev = layerEl(state.flowLayer);
-    if (!next) return Promise.resolve();
-    const leavingHome = state.flowLayer === "home" && name !== "home";
-    const enteringHome = name === "home";
-    state.flowBusy = true;
-    if (state.flowLayer === "basics" && name !== "basics") {
-      pauseBasicsVideos();
-    }
-    if (leavingHome) {
-      fadeOutHomeBgm(HOME_BGM.exitFadeSec);
-    }
-    // 轉場一開始就空白，避免 FLOW_MS 期間露出上次 hero
-    if (enteringHome && homeGatePassed) {
-      blankHomeHeroForReplay();
-    }
-    if (prev && prev !== next) {
-      prev.classList.add("is-leaving");
-      prev.classList.remove("is-active");
-    }
-    next.hidden = false;
-    requestAnimationFrame(() => {
-      next.classList.add("is-active");
-      next.classList.remove("is-leaving");
-    });
-    return new Promise((resolve) => {
-      window.setTimeout(() => {
-        if (prev && prev !== next) {
-          prev.hidden = true;
-          prev.classList.remove("is-leaving", "is-active");
-        }
-        state.flowLayer = name;
-        state.flowBusy = false;
-        document.body.dataset.flow = name;
-        // 返回首頁：先空白再完整淡入；BGM 僅在尚未結束的首次流程才播
-        if (enteringHome) {
-          if (!homeGatePassed) {
-            if (els.homeGate) els.homeGate.hidden = false;
-            if (els.homeHero) els.homeHero.hidden = true;
-          } else {
-            replayHomeEntranceBlankThenFade();
-          }
-        }
-        resolve();
-      }, FLOW_MS);
-    });
+    return appFlow.go(name);
   }
 
   function populateInstrumentGrid() {
@@ -1431,8 +1416,6 @@
           challengeShell.open(inst.id);
           return;
         }
-        stopTuner();
-        stopPlayback(false);
         state.instrumentId = inst.id;
         state.index = 0;
         state.noteMode = "scale";
@@ -1446,9 +1429,7 @@
         renderStrip();
         updateDisplay();
         updateTunerLabel();
-        showLayer("practice").then(() => {
-          scrollPracticeTitleToTop();
-        });
+        showLayer("practice");
       });
       els.instrumentGrid.appendChild(btn);
     });
@@ -1456,14 +1437,11 @@
 
   function leavePracticeToMenu() {
     playUiSound("back");
-    stopTuner();
-    stopPlayback(false);
     showLayer("menu");
   }
 
   if (els.btnEnterClassroom) {
     els.btnEnterClassroom.addEventListener("click", () => {
-      fadeOutHomeBgm(HOME_BGM.exitFadeSec);
       try {
         ensureAudioSync();
         unlockAudioBuffer();
@@ -1498,8 +1476,6 @@
   if (els.btnChallengeBack) {
     els.btnChallengeBack.addEventListener("click", () => {
       playUiSound("back");
-      stopTuner();
-      stopPlayback(false);
       showLayer("menu");
     });
   }
@@ -1526,8 +1502,6 @@
   if (els.btnChallengeToMenu) {
     els.btnChallengeToMenu.addEventListener("click", () => {
       playUiSound("back");
-      stopTuner();
-      stopPlayback(false);
       showLayer("menu");
     });
   }

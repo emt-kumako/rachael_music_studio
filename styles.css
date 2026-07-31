@@ -47,7 +47,11 @@ body {
   line-height: 1.45;
 }
 
-/* 首頁/教室/選樂器/基礎課：鎖定單視窗，禁止整頁捲動 */
+/* —— ScrollPolicy / Flow ——
+ * body[data-flow] 由 Flow.go 寫入。
+ * home/menu/instruments/basics：鎖定單視窗，禁止整頁捲動
+ * practice/challenge：整頁文件流捲動（勿再做層內 nested scroll）
+ */
 html:has(body[data-flow="home"]),
 html:has(body[data-flow="menu"]),
 html:has(body[data-flow="instruments"]),
@@ -61,10 +65,14 @@ body[data-flow="basics"] {
   overscroll-behavior: none;
 }
 
-body[data-flow="practice"] {
+html:has(body[data-flow="practice"]),
+html:has(body[data-flow="challenge"]),
+body[data-flow="practice"],
+body[data-flow="challenge"] {
   height: auto;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .atmosphere {
@@ -84,6 +92,11 @@ body[data-flow="practice"] {
 }
 
 /* —— Flow layers —— */
+/* .flow-layer.app { display:block } 會蓋掉 UA [hidden]，導致隱藏的挑戰層仍佔 min-height:100vh */
+.flow-layer[hidden] {
+  display: none !important;
+}
+
 .flow-layer {
   position: fixed;
   inset: 0;
@@ -133,7 +146,7 @@ body[data-flow="practice"] {
   align-items: center;
 }
 
-/* 練習頁：取消全螢幕 fixed 置中，改為可捲動文件流 */
+/* 練習／挑戰：取消全螢幕 fixed 置中，改為可捲動文件流 */
 .flow-layer.app {
   position: relative;
   display: block;
@@ -144,12 +157,12 @@ body[data-flow="practice"] {
   margin: 0 auto;
   align-items: stretch;
   justify-content: flex-start;
-  overflow-x: hidden;
-  overflow-y: auto;
+  /* 只讓 window/body 捲，避免層內 overflow 與整頁搶手勢而「卡住」 */
+  overflow: visible;
   overscroll-behavior-x: none;
   box-sizing: border-box;
   /* 上方勿留大段空白；safe-area 仍保留 */
-  padding: max(0.45rem, env(safe-area-inset-top, 0px))
+  padding: max(0.35rem, env(safe-area-inset-top, 0px))
     max(0.75rem, env(safe-area-inset-right, 0px))
     max(1.25rem, env(safe-area-inset-bottom, 0px))
     max(0.75rem, env(safe-area-inset-left, 0px));
@@ -157,7 +170,8 @@ body[data-flow="practice"] {
 }
 
 .flow-layer.app.is-active {
-  transform: translateY(0);
+  /* 去掉 transform，避免建立 containing block 干擾捲動／點擊 */
+  transform: none;
 }
 
 .home-hero {

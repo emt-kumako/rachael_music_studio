@@ -13,6 +13,7 @@ const timingSrc = fs.readFileSync(path.join(root, "practice-timing.js"), "utf8")
 const challengeSrc = fs.readFileSync(path.join(root, "fingering-challenge.js"), "utf8");
 const chartsSrc = fs.readFileSync(path.join(root, "fingering-charts.js"), "utf8");
 const shellSrc = fs.readFileSync(path.join(root, "challenge-shell.js"), "utf8");
+const flowSrc = fs.readFileSync(path.join(root, "flow.js"), "utf8");
 const uiSoundsSrc = fs.readFileSync(path.join(root, "ui-sounds.js"), "utf8");
 const sandbox = { window: {}, console };
 vm.runInNewContext(instrumentsSrc, sandbox);
@@ -20,12 +21,14 @@ vm.runInNewContext(timingSrc, sandbox);
 vm.runInNewContext(challengeSrc, sandbox);
 vm.runInNewContext(chartsSrc, sandbox);
 vm.runInNewContext(shellSrc, sandbox);
+vm.runInNewContext(flowSrc, sandbox);
 vm.runInNewContext(uiSoundsSrc, sandbox);
 const Band = sandbox.window.BandInstruments;
 const Timing = sandbox.window.PracticeTiming;
 const Challenge = sandbox.window.FingeringChallenge;
 const Charts = sandbox.window.FingeringCharts;
 const Shell = sandbox.window.ChallengeShell;
+const AppFlow = sandbox.window.Flow;
 const UiSounds = sandbox.window.UiSounds;
 
 let passed = 0;
@@ -174,7 +177,10 @@ for (const k of UiSounds.allKinds()) {
 }
 check("挑戰 phase 強制 hidden", /\.challenge-idle\[hidden\]/.test(css) && /display:\s*none\s*!important/.test(css));
 check("返回首頁空白再淡入", /replayHomeEntranceBlankThenFade/.test(app) && /blankHomeHeroForReplay/.test(app));
-check("返回首頁轉場即空白", /enteringHome && homeGatePassed[\s\S]{0,80}blankHomeHeroForReplay/.test(app));
+check(
+  "返回首頁轉場即空白",
+  /prepareHomeEnter:\s*\(\)\s*=>\s*\{[\s\S]*?blankHomeHeroForReplay/.test(app)
+);
 check("挑戰 idle 隱藏 lede", /challengeLede\.hidden = vm\.phase !== \"play\"/.test(app));
 check("app 播放 UI 音效", /function playUiSound/.test(app) && /playUiSound\("choose"\)/.test(app));
 
@@ -522,8 +528,118 @@ check("節拍器強弱拍頻率", /accent \? 1600 : 900/.test(app) || /1600/.tes
 check("音訊手勢同步解鎖", /function ensureAudioSync/.test(app) && /ensureAudioSync\(\)/.test(app));
 check("速度晶片含中英同字體", /tempo-chip-name/.test(app) && /tempo-chip-name/.test(css));
 check("速度手機上3下2置中", /\.tempo-chip:nth-child\(4\)/.test(css) && /grid-column:\s*2\s*\/\s*4/.test(css.replace(/\s+/g, " ")) && /\.tempo-chip:nth-child\(5\)/.test(css));
-check("選樂器後捲至練習頁頂", /function scrollPracticeTitleToTop/.test(app) && /scrollTo/.test(app) && /scrollPracticeTitleToTop\(\)/.test(app));
-check("練習頁上方縮邊", /\.flow-layer\.app[\s\S]*?padding:\s*max\(0\.45rem/.test(css) || /\.app\s*\{[^}]*padding:\s*0\.35rem\s+0/.test(css.replace(/\s+/g, " ")));
+check("選樂器後捲至練習頁頂", /scrollDocumentTop/.test(app) && /AppFlow\.create|Flow\.create/.test(app));
+check("練習頁上方縮邊", /\.flow-layer\.app[\s\S]*?padding:\s*max\(0\.35rem/.test(css) || /\.app\s*\{[^}]*padding:\s*0\.35rem\s+0/.test(css.replace(/\s+/g, " ")));
+check(
+  "隱藏 flow-layer 不佔版面",
+  /\.flow-layer\[hidden\]\s*\{[^}]*display:\s*none\s*!important/.test(css.replace(/\s+/g, " "))
+);
+check(
+  "挑戰與練習同為文件流捲動",
+  /data-flow="challenge"/.test(css) &&
+    /body\[data-flow="challenge"\]/.test(css) &&
+    /\.flow-layer\.app\s*\{[^}]*overflow:\s*visible/.test(css.replace(/\s+/g, " "))
+);
+check("ScrollPolicy 註記", /ScrollPolicy\s*\/\s*Flow/.test(css));
+check("載入 Flow", !!AppFlow && typeof AppFlow.create === "function");
+check("index 載入 flow.js", /flow\.js/.test(html));
+check("CONTEXT 有 Flow", /## Flow/.test(fs.readFileSync(path.join(root, "CONTEXT.md"), "utf8")));
+check("app 使用 Flow.go", /appFlow\.go|showLayer\(/.test(app) && /AppFlow\.create/.test(app));
+check(
+  "導覽按鈕不再自停練習音",
+  !/btnChallengeBack[\s\S]{0,120}stopTuner/.test(app) &&
+    !/leavePracticeToMenu[\s\S]{0,80}stopTuner/.test(app) &&
+    !/btnEnterClassroom[\s\S]{0,120}fadeOutHomeBgm/.test(app)
+);
+
+(() => {
+  function fakeEl(name) {
+    const classes = new Set();
+    return {
+      name,
+      hidden: true,
+      classList: {
+        add: (c) => classes.add(c),
+        remove: (c) => classes.delete(c),
+        contains: (c) => classes.has(c),
+      },
+    };
+  }
+  const layers = {
+    home: fakeEl("home"),
+    menu: fakeEl("menu"),
+    practice: fakeEl("practice"),
+    challenge: fakeEl("challenge"),
+    basics: fakeEl("basics"),
+    instruments: fakeEl("instruments"),
+  };
+  layers.home.hidden = false;
+  layers.home.classList.add("is-active");
+
+  const log = { halt: 0, fade: 0, pause: 0, prepHome: 0, enterHome: 0, scroll: 0, attrs: [] };
+  const queue = [];
+  const flow = AppFlow.create({
+    initialLayer: "home",
+    transitionMs: 0,
+    raf: (cb) => cb(),
+    delay: (cb) => {
+      queue.push(cb);
+    },
+    getLayer: (n) => layers[n] || null,
+    setFlowAttr: (n) => log.attrs.push(n),
+    syncState: () => {},
+    haltPracticeAudio: () => {
+      log.halt += 1;
+    },
+    fadeHomeBgm: () => {
+      log.fade += 1;
+    },
+    pauseBasics: () => {
+      log.pause += 1;
+    },
+    prepareHomeEnter: () => {
+      log.prepHome += 1;
+    },
+    onEnterHome: () => {
+      log.enterHome += 1;
+    },
+    scrollDocumentTop: () => {
+      log.scroll += 1;
+    },
+  });
+
+  function step(name) {
+    flow.go(name);
+    check(`Flow go(${name}) 排程轉場`, queue.length === 1);
+    const finish = queue.shift();
+    finish();
+  }
+
+  step("menu");
+  check("Flow home→menu fade", log.fade === 1 && log.halt === 0 && log.scroll === 0);
+  check("Flow setFlowAttr menu", log.attrs[log.attrs.length - 1] === "menu");
+
+  step("practice");
+  check("Flow →practice halt+scroll", log.halt === 1 && log.scroll === 1);
+
+  step("menu");
+  check("Flow practice→menu halt", log.halt === 2);
+
+  step("challenge");
+  check("Flow →challenge halt+scroll", log.halt === 3 && log.scroll === 2);
+
+  step("menu");
+  check("Flow challenge→menu halt", log.halt === 4 && log.scroll === 2);
+
+  step("basics");
+  const pauseBefore = log.pause;
+  step("menu");
+  check("Flow basics→menu pause", log.pause === pauseBefore + 1);
+
+  step("home");
+  check("Flow →home enter adapters", log.prepHome === 1 && log.enterHome === 1);
+  check("Flow →home 不 scroll", log.scroll === 2);
+})();
 check("練習發聲不 await 後才 tick", /els\.btnPlay\.textContent = "暫停";\s*\/\/[^\n]*\s*tick\(\);/.test(app) || /暫停";\s*\/\/ 必須在使用者手勢[\s\S]*?tick\(\);/.test(app));
 check("首頁BGM不預建WebAudio", /首頁 BGM 只用 HTMLAudio|勿在此建立 Web Audio/.test(app));
 check("stopPracticeTone不清節拍器", /function stopPracticeTone[\s\S]*?function playPracticeTone/.test(app) && !/function stopPracticeTone[\s\S]*?clearMetronome\(\)[\s\S]*?function playPracticeTone/.test(app));

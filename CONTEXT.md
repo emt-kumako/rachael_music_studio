@@ -14,7 +14,11 @@
 
 ## ChallengeShell
 
-指法挑戰 UI 流程殼：`ChallengeShell.create(adapters)` 提供 `open / start / answer / advance / replay / reset`。畫面經單一 `render(viewModel)`（譜面提示為結構化 `prompt` 欄位，HTML 組裝在 adapter）；進場停音／換層、題音、UI cue 走 adapters。題庫仍委派 `FingeringChallenge`。不含 DOM。
+指法挑戰 UI 流程殼：`ChallengeShell.create(adapters)` 提供 `open / start / answer / advance / replay / reset`。畫面經單一 `render(viewModel)`（譜面提示為結構化 `prompt` 欄位，HTML 組裝在 adapter）；進場停音／換層、題音、UI cue 走 adapters。題庫仍委派 `FingeringChallenge`。不含 DOM。換層經 `Flow.go`（`goChallenge` adapter）。
+
+## Flow
+
+導覽 module：`Flow.create(adapters)` 提供唯一入口 `go(name)`。負責層轉場（active／leaving／hidden）、`body[data-flow]`（ScrollPolicy：鎖定層 vs practice／challenge 文件流）、離開或進入 practice／challenge 時 halt 練習音、離開 home 淡出 BGM、進入 home 的空白淡入、離開 basics 暫停影片。進 practice／challenge 後 `scrollDocumentTop`。不含音訊實作本身（經 adapters）。
 
 ## FingeringCharts
 

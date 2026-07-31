@@ -1546,8 +1546,16 @@
   }
 
   function scrollPracticeTitleToTop() {
-    if (!els.appTitle) return;
-    els.appTitle.scrollIntoView({ block: "start", inline: "nearest", behavior: "auto" });
+    // 對齊練習頁頂部（含返回列），避免只捲標題而留下大段上方空白
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    } catch (_) {
+      window.scrollTo(0, 0);
+    }
+    const topEl = els.layerPractice || els.appTitle;
+    if (topEl && typeof topEl.scrollIntoView === "function") {
+      topEl.scrollIntoView({ block: "start", inline: "nearest", behavior: "auto" });
+    }
   }
 
   /** —— Playback —— */

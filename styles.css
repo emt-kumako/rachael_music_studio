@@ -148,6 +148,11 @@ body[data-flow="practice"] {
   overflow-y: auto;
   overscroll-behavior-x: none;
   box-sizing: border-box;
+  /* 上方勿留大段空白；safe-area 仍保留 */
+  padding: max(0.45rem, env(safe-area-inset-top, 0px))
+    max(0.75rem, env(safe-area-inset-right, 0px))
+    max(1.25rem, env(safe-area-inset-bottom, 0px))
+    max(0.75rem, env(safe-area-inset-left, 0px));
   transform: translateY(24px);
 }
 
@@ -812,20 +817,20 @@ body[data-flow="practice"] {
 }
 
 .flow-back.inline {
-  margin-top: 1em;
-  margin-bottom: 1em;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
   padding: 0;
   color: var(--brass-deep);
   font-size: 0.88rem;
 }
 
 .app {
-  padding: 2.5rem 0 3rem;
+  padding: 0.35rem 0 2.5rem;
   color: var(--ink);
 }
 
 .brand {
-  margin-bottom: 1.4rem;
+  margin-bottom: 0.85rem;
 }
 
 .brand-top {
@@ -833,8 +838,8 @@ body[data-flow="practice"] {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem 1rem;
-  margin-bottom: 0.55rem;
+  gap: 0.35rem 1rem;
+  margin-bottom: 0.35rem;
 }
 
 .brand-mark {
@@ -850,7 +855,7 @@ body[data-flow="practice"] {
   font-size: clamp(1.7rem, 4vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
-  scroll-margin-top: max(0.35rem, env(safe-area-inset-top, 0px));
+  scroll-margin-top: 0;
 }
 
 .lede {
@@ -2198,7 +2203,7 @@ select {
 @media (max-width: 640px) {
   .app {
     width: min(100% - 1.25rem, 920px);
-    padding: 1.25rem 0 2.25rem;
+    padding: 0.25rem 0 2rem;
   }
 
   .home-credit {

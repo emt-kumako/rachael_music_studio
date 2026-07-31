@@ -403,7 +403,8 @@ check("節拍器強弱拍頻率", /accent \? 1600 : 900/.test(app) || /1600/.tes
 check("音訊手勢同步解鎖", /function ensureAudioSync/.test(app) && /ensureAudioSync\(\)/.test(app));
 check("速度晶片含中英同字體", /tempo-chip-name/.test(app) && /tempo-chip-name/.test(css));
 check("速度手機上3下2置中", /\.tempo-chip:nth-child\(4\)/.test(css) && /grid-column:\s*2\s*\/\s*4/.test(css.replace(/\s+/g, " ")) && /\.tempo-chip:nth-child\(5\)/.test(css));
-check("選樂器後捲至標題頂", /function scrollPracticeTitleToTop/.test(app) && /scrollPracticeTitleToTop\(\)/.test(app));
+check("選樂器後捲至練習頁頂", /function scrollPracticeTitleToTop/.test(app) && /scrollTo/.test(app) && /scrollPracticeTitleToTop\(\)/.test(app));
+check("練習頁上方縮邊", /\.flow-layer\.app[\s\S]*?padding:\s*max\(0\.45rem/.test(css) || /\.app\s*\{[^}]*padding:\s*0\.35rem\s+0/.test(css.replace(/\s+/g, " ")));
 check("練習發聲不 await 後才 tick", /els\.btnPlay\.textContent = "暫停";\s*\/\/[^\n]*\s*tick\(\);/.test(app) || /暫停";\s*\/\/ 必須在使用者手勢[\s\S]*?tick\(\);/.test(app));
 check("首頁BGM不預建WebAudio", /首頁 BGM 只用 HTMLAudio|勿在此建立 Web Audio/.test(app));
 check("stopPracticeTone不清節拍器", /function stopPracticeTone[\s\S]*?function playPracticeTone/.test(app) && !/function stopPracticeTone[\s\S]*?clearMetronome\(\)[\s\S]*?function playPracticeTone/.test(app));

@@ -2217,7 +2217,10 @@
   }
   if (els.btnChallengeNext) {
     els.btnChallengeNext.addEventListener("click", () => {
-      if (/看結果/.test(els.btnChallengeNext.textContent || "")) playUiSound("finish");
+      const session = challengeState.session;
+      const atLast =
+        session && challengeState.qIndex + 1 >= session.questions.length;
+      if (atLast) playUiSound("finish");
       advanceChallenge();
     });
   }

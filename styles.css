@@ -465,6 +465,13 @@ body[data-flow="practice"] {
   text-align: center;
 }
 
+/* display:flex 會蓋掉原生 [hidden]，必須強制隱藏 */
+.challenge-idle[hidden],
+.challenge-play[hidden],
+.challenge-result[hidden] {
+  display: none !important;
+}
+
 .challenge-instrument {
   margin: 0;
   font-size: 1.25rem;

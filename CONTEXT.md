@@ -7,3 +7,7 @@
 ## FingeringChallenge
 
 「指法挑戰」純計算 module：從樂器大調音階音抽出一局題目（預設 5 題），每題 1 個譜面提示音與 3 個指法選項（優先選指法指紋不同者），並可判定對錯。不含 DOM、不含音訊。
+
+## UiSounds
+
+UI 按鈕回饋音的對照 module：將音效種類（choose／back／startGame／correct／wrong／finish）對應到站內資產路徑。不含 DOM、不負責實際播放。

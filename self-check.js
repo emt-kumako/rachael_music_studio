@@ -11,13 +11,16 @@ const root = __dirname;
 const instrumentsSrc = fs.readFileSync(path.join(root, "instruments.js"), "utf8");
 const timingSrc = fs.readFileSync(path.join(root, "practice-timing.js"), "utf8");
 const challengeSrc = fs.readFileSync(path.join(root, "fingering-challenge.js"), "utf8");
+const uiSoundsSrc = fs.readFileSync(path.join(root, "ui-sounds.js"), "utf8");
 const sandbox = { window: {}, console };
 vm.runInNewContext(instrumentsSrc, sandbox);
 vm.runInNewContext(timingSrc, sandbox);
 vm.runInNewContext(challengeSrc, sandbox);
+vm.runInNewContext(uiSoundsSrc, sandbox);
 const Band = sandbox.window.BandInstruments;
 const Timing = sandbox.window.PracticeTiming;
 const Challenge = sandbox.window.FingeringChallenge;
+const UiSounds = sandbox.window.UiSounds;
 
 let passed = 0;
 let failed = 0;
@@ -129,6 +132,25 @@ check("載入 FingeringChallenge", !!Challenge && typeof Challenge.buildSession 
 check("index 載入 fingering-challenge.js", /fingering-challenge\.js/.test(html));
 check("指法挑戰選單入口", /btnFingeringChallenge/.test(html) && /指法挑戰/.test(html));
 check("指法挑戰 flow-layer", /data-layer="challenge"/.test(html) || /id="layerChallenge"/.test(html));
+check("載入 UiSounds", !!UiSounds && typeof UiSounds.assetPath === "function");
+check("index 載入 ui-sounds.js", /ui-sounds\.js/.test(html));
+check(
+  "UiSounds 六種對照",
+  ["choose", "back", "startGame", "correct", "wrong", "finish"].every((k) => !!UiSounds.assetPath(k))
+);
+check("UiSounds choose 檔", /Choose\.wav$/.test(UiSounds.assetPath("choose")));
+check("UiSounds back 檔", /Vibe Back\.wav$/.test(UiSounds.assetPath("back")));
+check("UiSounds startGame 檔", /Start Game\.mp3$/.test(UiSounds.assetPath("startGame")));
+check("UiSounds correct 檔", /correct-choice-gliss-01\.mp3$/.test(UiSounds.assetPath("correct")));
+check("UiSounds wrong 檔", /Wrong\.mp3$/.test(UiSounds.assetPath("wrong")));
+check("UiSounds finish 檔", /cartoon happy finish\.mp3$/.test(UiSounds.assetPath("finish")));
+for (const k of UiSounds.allKinds()) {
+  const rel = UiSounds.assetPath(k);
+  check(`音效檔存在 ${k}`, fs.existsSync(path.join(root, rel)), rel);
+}
+check("挑戰 phase 強制 hidden", /\.challenge-idle\[hidden\]/.test(css) && /display:\s*none\s*!important/.test(css));
+check("返回首頁空白再淡入", /replayHomeEntranceBlankThenFade/.test(app));
+check("app 播放 UI 音效", /function playUiSound/.test(app) && /playUiSound\("choose"\)/.test(app));
 
 (() => {
   let seq = 0;

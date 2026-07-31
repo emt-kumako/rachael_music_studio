@@ -6,6 +6,7 @@
   const Band = window.BandInstruments;
   const Timing = window.PracticeTiming;
   const Challenge = window.FingeringChallenge;
+  const UiSounds = window.UiSounds;
   const A4_HZ = Band.A4_HZ;
 
   const els = {
@@ -138,6 +139,26 @@
     } catch (_) {
       return clean;
     }
+  }
+
+  /** UI 音效：依 UiSounds 對照播放；失敗不擋操作 */
+  const uiSoundPlayers = new Map();
+  function playUiSound(kind) {
+    if (!UiSounds || !kind) return;
+    const rel = UiSounds.assetPath(kind);
+    if (!rel) return;
+    try {
+      let audio = uiSoundPlayers.get(kind);
+      if (!audio) {
+        audio = new Audio();
+        audio.preload = "auto";
+        uiSoundPlayers.set(kind, audio);
+      }
+      audio.src = assetUrl(rel);
+      audio.currentTime = 0;
+      const p = audio.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch (_) {}
   }
 
   /** 首頁 BGM：進頁即播；0:01.15 起、0:20.00 停（不淡入） */
@@ -302,6 +323,24 @@
       els.homeHero.hidden = false;
       playHomeHeroIntro();
     }
+  }
+
+  /** 返回首頁：先空白，再完整重播 logo／文案／按鈕淡入 */
+  function replayHomeEntranceBlankThenFade() {
+    if (els.homeGate) els.homeGate.hidden = true;
+    homeGatePassed = true;
+    if (els.homeHero) {
+      els.homeHero.classList.remove("is-intro");
+      els.homeHero.hidden = true;
+    }
+    window.setTimeout(() => {
+      if (state.flowLayer !== "home") return;
+      if (!homeBgmSessionDone) {
+        beginHomeIntro();
+      } else {
+        showHomeContentWithoutGate();
+      }
+    }, 80);
   }
 
   function seekHomeBgmStart() {
@@ -1787,7 +1826,13 @@
       els.challengeInstrumentName.textContent = `${inst.nameZh}（${inst.name}）`;
     }
     if (els.challengeFeedback) els.challengeFeedback.hidden = true;
+    if (els.challengeFeedbackText) els.challengeFeedbackText.textContent = "";
+    if (els.challengeReveal) els.challengeReveal.innerHTML = "";
     if (els.challengeOptions) els.challengeOptions.innerHTML = "";
+    if (els.challengeProgress) els.challengeProgress.textContent = "";
+    if (els.challengeScore) els.challengeScore.textContent = "";
+    if (els.challengeScoreNote) els.challengeScoreNote.textContent = "";
+    if (els.btnChallengeNext) els.btnChallengeNext.textContent = "下一題";
     showChallengePhase("idle");
   }
 
@@ -1855,6 +1900,7 @@
     if (!q) return;
     challengeState.awaitingNext = true;
     const ok = Challenge.grade(q, chosenIndex);
+    playUiSound(ok ? "correct" : "wrong");
     if (ok) challengeState.score += 1;
     if (els.challengeOptions) {
       els.challengeOptions.querySelectorAll(".challenge-option").forEach((btn, i) => {
@@ -2058,16 +2104,13 @@
         state.flowLayer = name;
         state.flowBusy = false;
         document.body.dataset.flow = name;
-        // 返回首頁：已過閘門則只重播畫面動畫；音樂僅在尚未結束的首次流程才播
+        // 返回首頁：先空白再完整淡入；BGM 僅在尚未結束的首次流程才播
         if (enteringHome) {
           if (!homeGatePassed) {
-            /* 理論上不會：離開教室前必已過閘門 */
             if (els.homeGate) els.homeGate.hidden = false;
             if (els.homeHero) els.homeHero.hidden = true;
-          } else if (!homeBgmSessionDone) {
-            beginHomeIntro();
           } else {
-            showHomeContentWithoutGate();
+            replayHomeEntranceBlankThenFade();
           }
         }
         resolve();
@@ -2086,6 +2129,7 @@
       btn.setAttribute("role", "listitem");
       btn.innerHTML = `${inst.nameZh}<small>${inst.name}</small>`;
       btn.addEventListener("click", () => {
+        playUiSound("choose");
         if (state.pickMode === "challenge") {
           openChallengeForInstrument(inst.id);
           return;
@@ -2114,6 +2158,7 @@
   }
 
   function leavePracticeToMenu() {
+    playUiSound("back");
     stopTuner();
     stopPlayback(false);
     showLayer("menu");
@@ -2130,48 +2175,72 @@
     });
   }
   if (els.btnBasicsCourse) {
-    els.btnBasicsCourse.addEventListener("click", () => openBasicsCourse());
+    els.btnBasicsCourse.addEventListener("click", () => {
+      playUiSound("choose");
+      openBasicsCourse();
+    });
   }
   if (els.btnScalePractice) {
-    els.btnScalePractice.addEventListener("click", () => openInstrumentPicker("practice"));
+    els.btnScalePractice.addEventListener("click", () => {
+      playUiSound("choose");
+      openInstrumentPicker("practice");
+    });
   }
   if (els.btnFingeringChallenge) {
-    els.btnFingeringChallenge.addEventListener("click", () => openInstrumentPicker("challenge"));
+    els.btnFingeringChallenge.addEventListener("click", () => {
+      playUiSound("choose");
+      openInstrumentPicker("challenge");
+    });
   }
   if (els.btnMenuHome) {
-    els.btnMenuHome.addEventListener("click", () => showLayer("home"));
+    els.btnMenuHome.addEventListener("click", () => {
+      playUiSound("back");
+      showLayer("home");
+    });
   }
   if (els.btnChallengeBack) {
     els.btnChallengeBack.addEventListener("click", () => {
+      playUiSound("back");
       stopTuner();
       stopPlayback(false);
       showLayer("menu");
     });
   }
   if (els.btnChallengeStart) {
-    els.btnChallengeStart.addEventListener("click", () => startChallengeSession());
+    els.btnChallengeStart.addEventListener("click", () => {
+      playUiSound("startGame");
+      startChallengeSession();
+    });
   }
   if (els.btnChallengeReplay) {
     els.btnChallengeReplay.addEventListener("click", () => playChallengePromptTone());
   }
   if (els.btnChallengeNext) {
-    els.btnChallengeNext.addEventListener("click", () => advanceChallenge());
+    els.btnChallengeNext.addEventListener("click", () => {
+      if (/看結果/.test(els.btnChallengeNext.textContent || "")) playUiSound("finish");
+      advanceChallenge();
+    });
   }
   if (els.btnChallengeAgain) {
     els.btnChallengeAgain.addEventListener("click", () => {
+      playUiSound("startGame");
       resetChallengeUiToIdle();
       startChallengeSession();
     });
   }
   if (els.btnChallengeToMenu) {
     els.btnChallengeToMenu.addEventListener("click", () => {
+      playUiSound("back");
       stopTuner();
       stopPlayback(false);
       showLayer("menu");
     });
   }
   if (els.btnBasicsBack) {
-    els.btnBasicsBack.addEventListener("click", () => showLayer("menu"));
+    els.btnBasicsBack.addEventListener("click", () => {
+      playUiSound("back");
+      showLayer("menu");
+    });
   }
   if (els.btnBasicsPrev) {
     els.btnBasicsPrev.addEventListener("click", () => {
@@ -2183,12 +2252,16 @@
   if (els.btnBasicsNext) {
     els.btnBasicsNext.addEventListener("click", () => {
       if (basicsLessonIndex >= BASICS_LESSONS.length - 1) return;
+      playUiSound("choose");
       basicsLessonIndex += 1;
       renderBasicsLesson();
     });
   }
   if (els.btnPickBack) {
-    els.btnPickBack.addEventListener("click", () => showLayer("menu"));
+    els.btnPickBack.addEventListener("click", () => {
+      playUiSound("back");
+      showLayer("menu");
+    });
   }
   if (els.btnPracticeBack) {
     els.btnPracticeBack.addEventListener("click", () => leavePracticeToMenu());

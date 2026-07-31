@@ -11,15 +11,18 @@ const root = __dirname;
 const instrumentsSrc = fs.readFileSync(path.join(root, "instruments.js"), "utf8");
 const timingSrc = fs.readFileSync(path.join(root, "practice-timing.js"), "utf8");
 const challengeSrc = fs.readFileSync(path.join(root, "fingering-challenge.js"), "utf8");
+const chartsSrc = fs.readFileSync(path.join(root, "fingering-charts.js"), "utf8");
 const uiSoundsSrc = fs.readFileSync(path.join(root, "ui-sounds.js"), "utf8");
 const sandbox = { window: {}, console };
 vm.runInNewContext(instrumentsSrc, sandbox);
 vm.runInNewContext(timingSrc, sandbox);
 vm.runInNewContext(challengeSrc, sandbox);
+vm.runInNewContext(chartsSrc, sandbox);
 vm.runInNewContext(uiSoundsSrc, sandbox);
 const Band = sandbox.window.BandInstruments;
 const Timing = sandbox.window.PracticeTiming;
 const Challenge = sandbox.window.FingeringChallenge;
+const Charts = sandbox.window.FingeringCharts;
 const UiSounds = sandbox.window.UiSounds;
 
 let passed = 0;
@@ -124,6 +127,24 @@ check(
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const css = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
+const charts = chartsSrc;
+
+check("載入 FingeringCharts", !!Charts && typeof Charts.chartHtml === "function");
+check("index 載入 fingering-charts.js", /fingering-charts\.js/.test(html));
+check("app 使用 chartHtml", /Charts\.chartHtml|FingeringCharts/.test(app) && !/captureFingeringHtml/.test(app));
+for (const inst of Band.instruments) {
+  const htmlChart = Charts.chartHtml(inst, inst.notes[0]);
+  check(
+    `${inst.name} chartHtml 非空`,
+    typeof htmlChart === "string" && htmlChart.length > 40,
+    String((htmlChart && htmlChart.length) || 0)
+  );
+}
+check("小號 chart 含 valve-board", /valve-board/.test(Charts.chartHtml(Band.getById("trumpet"), Band.getById("trumpet").notes[0])));
+check("長笛 chart 含 woodwind-view", /woodwind-view/.test(Charts.chartHtml(Band.getById("flute"), Band.getById("flute").notes[0])));
+check("長號 chart 含 trombone-view", /trombone-view/.test(Charts.chartHtml(Band.getById("trombone"), Band.getById("trombone").notes[0])));
+check("鋼琴 chart 含 piano-view", /piano-view/.test(Charts.chartHtml(Band.getById("piano"), Band.getById("piano").notes[0])));
+check("法國號 chart 含 horn-valve", /horn-valve/.test(Charts.chartHtml(Band.getById("horn"), Band.getById("horn").notes[0])));
 
 check("載入 PracticeTiming", !!Timing && typeof Timing.buildBeatPlan === "function");
 check("index 載入 practice-timing.js", /practice-timing\.js/.test(html));
@@ -243,12 +264,12 @@ check(
 check("音階2拍末音仍湊小節非8", Timing.buildBeatPlan(8, 8, 2, "up", "scale")[7] !== 8);
 check("長笛示意圖檔", fs.existsSync(path.join(root, "assets", "flute-finger-schematic.png")));
 check("長笛Bb4參考圖", fs.existsSync(path.join(root, "assets", "flute-finger-Bb4.png")));
-check("長笛圖已接入", /flute-finger-schematic\.png/.test(app) && /fluteBodyMetal/.test(app) && /fluteKeyGold/.test(app));
+check("長笛圖已接入", /flute-finger-schematic\.png/.test(charts) && /fluteBodyMetal/.test(charts) && /fluteKeyGold/.test(charts));
 check("長笛 B♭4 指法對齊圖2", /"Bb",\s*"L1",\s*"R1",\s*"Eb"/.test(instrumentsSrc));
 check("長笛按下金色", /\.flute-key\.pressed\s*\{[^}]*fluteKeyGold/.test(css.replace(/\s+/g, " ")) || /url\(#fluteKeyGold\)/.test(css));
 check("長笛空鍵白色", /\.flute-key\.open\s*\{[^}]*fill:\s*#fff/.test(css.replace(/\s+/g, " ")));
 check("長笛固定鐵灰", /\.flute-key-fixed\s*\{[^}]*fill:\s*#4a4f55/.test(css.replace(/\s+/g, " ")));
-check("長笛管身金屬漸層", /fluteBodyMetal/.test(app) && /#d5dce6/.test(app));
+check("長笛管身金屬漸層", /fluteBodyMetal/.test(charts) && /#d5dce6/.test(charts));
 check("長笛起始實音 Bb4", Band.getById("flute").notes[0].concertMidi === 70 && Band.getById("flute").notes[0].writtenMidi === 70);
 check(
   "長笛起始指法 Bb·L1·R1·Eb",
@@ -259,18 +280,18 @@ check("豎笛系譜面音比照小號", /\.stage\.is-ww-split \.pitch-written-wr
 check("豎笛系靠攏 50px", /translateX\(50px\)/.test(css));
 check("豎笛系按鍵外框加粗", /\.stage\.is-ww-split \.ww-svg \.ww-key\s*\{[^}]*stroke-width:\s*3\.8/.test(css.replace(/\s+/g, " ")));
 check("長號標題用把位", /practiceKind.*trombone.*把位|ui === "trombone" \? "把位"/.test(app.replace(/\s+/g, " ")));
-check("長號把位數字置中", /dominant-baseline="central"/.test(app) && /labelCy/.test(app));
+check("長號把位數字置中", /dominant-baseline="central"/.test(charts) && /labelCy/.test(charts));
 check("豎笛水平拉伸10%", /\.ww-clarinet \.ww-svg\.clarinet-chart\s*\{[^}]*scaleX\(1\.1\)/.test(css.replace(/\s+/g, " ")));
 check("AltoTenor水平10%垂直-10%", /\.ww-altoSax \.ww-svg\.sax-chart[\s\S]*?scaleX\(1\.1\) scaleY\(0\.9\)/.test(css.replace(/\s+/g, " ")));
 check("實音框貼 stage 底部", /id="practiceStage"[\s\S]*?id="concertFloat"/.test(html) && /\.stage\s*\{[^}]*position:\s*relative/.test(css.replace(/\s+/g, " ")));
 check("實音框距左下 5px", /\.pitch-concert-float\s*\{[^}]*left:\s*5px/.test(css.replace(/\s+/g, " ")) && /\.pitch-concert-float\s*\{[^}]*bottom:\s*5px/.test(css.replace(/\s+/g, " ")));
 check("實音框不攔截指標", /\.pitch-concert-float\s*\{[^}]*pointer-events:\s*none/.test(css.replace(/\s+/g, " ")));
 check("實音框不在 fingering-stage 內", /<div class="fingering-stage">\s*<div id="fingeringStage" class="fingering-main"><\/div>\s*<\/div>/.test(html));
-check("豎笛黑檀管身", /"ebony"/.test(app) && /wwBodyMetalDefs\("cl",\s*"ebony"\)/.test(app));
-check("豎笛無管身雙線", /function renderClarinetSvg[\s\S]*?function renderSaxSvg/.test(app) && !/function renderClarinetSvg[\s\S]*?ww-body-line[\s\S]*?function renderSaxSvg/.test(app));
-check("豎笛按下金色", /\.clarinet-chart \.ww-key\.pressed/.test(css) && /clarinetKeyGold/.test(app));
+check("豎笛黑檀管身", /"ebony"/.test(charts) && /wwBodyMetalDefs\("cl",\s*"ebony"\)/.test(charts));
+check("豎笛無管身雙線", /function renderClarinetSvg[\s\S]*?function renderSaxSvg/.test(charts) && !/function renderClarinetSvg[\s\S]*?ww-body-line[\s\S]*?function renderSaxSvg/.test(charts));
+check("豎笛按下金色", /\.clarinet-chart \.ww-key\.pressed/.test(css) && /clarinetKeyGold/.test(charts));
 check("豎笛空鍵白色", /\.clarinet-chart \.ww-key\.open[\s\S]{0,120}?fill:\s*#fff/.test(css));
-check("AltoTenor按鍵同豎笛", /\.sax-chart \.ww-key\.open/.test(css) && /saxKeyGold/.test(app) && /url\(#saxKeyGold\)/.test(css));
+check("AltoTenor按鍵同豎笛", /\.sax-chart \.ww-key\.open/.test(css) && /saxKeyGold/.test(charts) && /url\(#saxKeyGold\)/.test(css));
 check("豎笛系空按圖例對齊", /\.ww-clarinet \.ww-swatch\.open[\s\S]*?#ffffff/.test(css.replace(/\s+/g, " ")) && /\.ww-altoSax \.ww-swatch\.pressed[\s\S]*?linear-gradient/.test(css.replace(/\s+/g, " ")));
 check("無音列標籤", !/>音列</.test(html));
 check("音階半音階均分置中", /strip-mode-segmented/.test(html) && /\.strip-mode-segmented\s*\{[^}]*width:\s*100%/.test(css.replace(/\s+/g, " ")) && /grid-template-columns:\s*1fr 1fr/.test(css));
@@ -297,7 +318,7 @@ check("導覽上下一行間距", /\.flow-back\s*\{[^}]*margin-top:\s*1em/.test(
 check("CTA玫瑰金按鈕", /--cta-hi:\s*#e6b896/.test(css) && /\.menu-action\s*\{[^}]*var\(--cta-hi\)/.test(css.replace(/\s+/g, " ")) && /\.btn\.primary\s*\{[^}]*var\(--cta-hi\)/.test(css.replace(/\s+/g, " ")));
 check("每音拍數三欄均分", /beats-segmented/.test(html) && /grid-template-columns:\s*1fr 1fr 1fr/.test(css));
 check("直式木管手機置中", /\.stage\.is-ww-split \.woodwind-view\s*\{[^}]*transform:\s*none/.test(css.replace(/\s+/g, " ")));
-check("豎笛viewBox光學置中", /viewBox="-10 0 220 560"/.test(app));
+check("豎笛viewBox光學置中", /viewBox="-10 0 220 560"/.test(charts));
 check("網站圖示 favicon", /rel="icon"/.test(html) && /favicon\.ico\?v=/.test(html) && fs.existsSync(path.join(root, "assets", "favicon.ico")) && fs.existsSync(path.join(root, "assets", "favicon-32.png")) && fs.existsSync(path.join(root, "assets", "apple-touch-icon.png")));
 check("根目錄 favicon.ico", fs.existsSync(path.join(root, "favicon.ico")));
 check("停用 Jekyll .nojekyll", fs.existsSync(path.join(root, ".nojekyll")));
@@ -322,12 +343,12 @@ check("首頁 BGM 手勢解鎖不略過", /passHomeGate/.test(app) || /手勢當
 check("返回首頁不重播 BGM", /homeBgmSessionDone/.test(app) && /showHomeContentWithoutGate/.test(app));
 check("Tuner 開啟文字為 Tuner 調音器", /els\.btnTuner\.textContent = "Tuner 調音器"/.test(app) && /Tuner 調音器/.test(html) && !/停止 Tuner/.test(app));
 check("Tuner 亮綠燈樣式", /\.btn\.tuner\.active/.test(css) && /#3ddc6a|#1aa84a|rgba\(61,\s*220,\s*106/.test(css));
-check("長笛拉伸水平10%垂直15%", /scale\(1\.1,\s*1\.15\)/.test(app));
-check("長笛固定框架", /\.flute-chart-frame\s*\{[^}]*aspect-ratio:\s*990\s*\/\s*248/.test(css.replace(/\s+/g, " ")) && /flute-chart-frame/.test(app));
+check("長笛拉伸水平10%垂直15%", /scale\(1\.1,\s*1\.15\)/.test(charts) || /scale\(1\.1,\s*1\.15\)/.test(css));
+check("長笛固定框架", /\.flute-chart-frame\s*\{[^}]*aspect-ratio:\s*990\s*\/\s*248/.test(css.replace(/\s+/g, " ")) && /flute-chart-frame/.test(charts));
 check("長笛圖例間距加大", /\.ww-flute\s*\{[^}]*gap:\s*calc\(0\.45rem \+ 10px\)/.test(css.replace(/\s+/g, " ")));
-check("長笛上緣不裁切", /viewBox="0 0 990 248"/.test(app) && /translate\(-40,\s*-132\)/.test(app) && /\.fingering-main\s*\{[^}]*overflow:\s*visible/.test(css.replace(/\s+/g, " ")));
-check("長笛拇指座標新圖", /cx="342\.7" cy="295\.7"/.test(app) && /cx="420\.2" cy="296"/.test(app));
-check("長笛圖例在按鍵圖下方", /family === "flute"[\s\S]*?\$\{svg\}\$\{legend\}/.test(app.replace(/\s+/g, " ")));
+check("長笛上緣不裁切", /viewBox="0 0 990 248"/.test(charts) && /translate\(-40,\s*-132\)/.test(charts) && /\.fingering-main\s*\{[^}]*overflow:\s*visible/.test(css.replace(/\s+/g, " ")));
+check("長笛拇指座標新圖", /cx="342\.7" cy="295\.7"/.test(charts) && /cx="420\.2" cy="296"/.test(charts));
+check("長笛圖例在按鍵圖下方", /family === "flute"[\s\S]*?\$\{svg\}\$\{legend\}/.test(charts.replace(/\s+/g, " ")));
 check(
   "長笛 B C C# D 指法",
   JSON.stringify(Band.getById("flute").notes[1].keys) === JSON.stringify(["Bb", "L1", "Eb"]) &&

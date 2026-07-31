@@ -444,6 +444,23 @@ window.BandInstruments = (function () {
     }),
   ];
 
+  /** 以記譜主音為根的大調音級（0–11） */
+  function majorScalePitchClasses(tonicMidi) {
+    const tonic = ((tonicMidi % 12) + 12) % 12;
+    return new Set([0, 2, 4, 5, 7, 9, 11].map((d) => (tonic + d) % 12));
+  }
+
+  /**
+   * 音階練習／指法挑戰共用：以音域起始記譜音為主音的大調音級，
+   * 過濾該樂器 notes（音域上下限不變）。
+   */
+  function scaleNotes(instrument) {
+    const all = (instrument && instrument.notes) || [];
+    if (!all.length) return [];
+    const deg = majorScalePitchClasses(all[0].writtenMidi);
+    return all.filter((n) => deg.has(((n.writtenMidi % 12) + 12) % 12));
+  }
+
   return {
     A4_HZ: 442,
     NOTE_NAMES,
@@ -463,6 +480,8 @@ window.BandInstruments = (function () {
     displayPitchName,
     solfegeFor,
     writtenToConcert,
+    majorScalePitchClasses,
+    scaleNotes,
     midiToHz(midi, a4 = 442) {
       return a4 * 2 ** ((midi - 69) / 12);
     },

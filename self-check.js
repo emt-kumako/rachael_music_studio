@@ -159,8 +159,22 @@ check("app 播放 UI 音效", /function playUiSound/.test(app) && /playUiSound\(
     return (seq * 0.17) % 1;
   };
   const flute = Band.getById("flute");
-  const scale = Challenge.scaleNotes(flute);
+  check("Band.scaleNotes 存在", typeof Band.scaleNotes === "function");
+  const scale = Band.scaleNotes(flute);
   check("長笛音階音數量合理", scale.length >= 5 && scale.length <= 13, String(scale.length));
+  check(
+    "挑戰音池委派 Band.scaleNotes",
+    Challenge.scaleNotes(flute) === scale ||
+      JSON.stringify(Challenge.scaleNotes(flute).map((n) => n.writtenMidi)) ===
+        JSON.stringify(scale.map((n) => n.writtenMidi))
+  );
+  for (const inst of Band.instruments) {
+    const sn = Band.scaleNotes(inst);
+    check(
+      `${inst.name} Band.scaleNotes 非空且⊆notes`,
+      sn.length >= 1 && sn.every((n) => inst.notes.includes(n))
+    );
+  }
   const session = Challenge.buildSession(flute, { questionCount: 5, optionCount: 3, rng });
   check("一局 5 題", session.questions.length === 5);
   check(

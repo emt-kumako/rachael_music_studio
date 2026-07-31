@@ -739,17 +739,10 @@
     return Band.getById(state.instrumentId);
   }
 
-  /** 以該樂器音域起始記譜音為主音的大調音級（音域上下限不變） */
-  function majorScalePitchClasses(tonicMidi) {
-    const tonic = ((tonicMidi % 12) + 12) % 12;
-    return new Set([0, 2, 4, 5, 7, 9, 11].map((d) => (tonic + d) % 12));
-  }
-
   function currentNotes() {
-    const all = currentInstrument().notes;
-    if (state.noteMode !== "scale" || !all.length) return all;
-    const deg = majorScalePitchClasses(all[0].writtenMidi);
-    return all.filter((n) => deg.has(((n.writtenMidi % 12) + 12) % 12));
+    const inst = currentInstrument();
+    if (state.noteMode !== "scale") return inst.notes;
+    return Band.scaleNotes(inst);
   }
 
   function noteModeFromUi() {
@@ -2340,12 +2333,13 @@
     state,
     currentInstrument,
     currentNotes,
-    majorScalePitchClasses,
+    majorScalePitchClasses: Band.majorScalePitchClasses,
+    scaleNotes: Band.scaleNotes,
     midiToHz,
     noteDurationSec,
     showLayer,
     beatsPerNote,
-    buildBeatPlan,
+    buildBeatPlan: Timing.buildBeatPlan,
     refreshBeatPlan,
     beatsForSequencePosition,
     startBarBeatForSequencePosition,

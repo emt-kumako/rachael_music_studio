@@ -3,17 +3,11 @@
  * 看譜面音 → 多選一指法；音池為該樂器大調音階音。
  */
 window.FingeringChallenge = (function () {
-  function majorScalePitchClasses(tonicMidi) {
-    const tonic = ((tonicMidi % 12) + 12) % 12;
-    return new Set([0, 2, 4, 5, 7, 9, 11].map((d) => (tonic + d) % 12));
-  }
-
-  /** 與音階練習相同：以音域起始記譜音為主音的大調音級 */
+  /** 音池：委派 BandInstruments.scaleNotes（單一 seam） */
   function scaleNotes(instrument) {
-    const all = (instrument && instrument.notes) || [];
-    if (!all.length) return [];
-    const deg = majorScalePitchClasses(all[0].writtenMidi);
-    return all.filter((n) => deg.has(((n.writtenMidi % 12) + 12) % 12));
+    const Band = window.BandInstruments;
+    if (Band && typeof Band.scaleNotes === "function") return Band.scaleNotes(instrument);
+    return (instrument && instrument.notes) || [];
   }
 
   function fingeringFingerprint(note) {

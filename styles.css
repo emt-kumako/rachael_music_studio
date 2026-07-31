@@ -550,9 +550,10 @@ body[data-flow="practice"] {
 
 .challenge-option-chart .ww-svg,
 .challenge-option-chart .valve-board,
+.challenge-option-chart .trombone-view,
 .challenge-option-chart .trombone-svg,
 .challenge-option-chart .horn-valve-board,
-.challenge-option-chart .piano-board {
+.challenge-option-chart .piano-view {
   transform: scale(0.55);
   transform-origin: center center;
   max-width: none;
@@ -624,9 +625,10 @@ body[data-flow="practice"] {
 
   .challenge-option-chart .ww-svg,
   .challenge-option-chart .valve-board,
+  .challenge-option-chart .trombone-view,
   .challenge-option-chart .trombone-svg,
   .challenge-option-chart .horn-valve-board,
-  .challenge-option-chart .piano-board {
+  .challenge-option-chart .piano-view {
     transform: scale(0.48);
   }
 }

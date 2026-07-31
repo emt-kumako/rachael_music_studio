@@ -1836,10 +1836,11 @@
         btn.className = "challenge-option";
         btn.setAttribute("role", "listitem");
         btn.dataset.index = String(i);
+        // 選項只顯示指法圖，避免文字標籤（尤其鋼琴）洩題
         btn.innerHTML = `<div class="challenge-option-chart">${captureFingeringHtml(
           challengeState.instrumentId,
           note
-        )}</div><span class="challenge-option-label">${note.label || ""}</span>`;
+        )}</div>`;
         btn.addEventListener("click", () => onChallengeAnswer(i));
         els.challengeOptions.appendChild(btn);
       });

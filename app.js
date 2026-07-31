@@ -5,6 +5,7 @@
 (function () {
   const Band = window.BandInstruments;
   const Timing = window.PracticeTiming;
+  const Challenge = window.FingeringChallenge;
   const A4_HZ = Band.A4_HZ;
 
   const els = {
@@ -49,12 +50,35 @@
     btnEnterClassroom: document.getElementById("btnEnterClassroom"),
     btnBasicsCourse: document.getElementById("btnBasicsCourse"),
     btnScalePractice: document.getElementById("btnScalePractice"),
+    btnFingeringChallenge: document.getElementById("btnFingeringChallenge"),
     btnMenuHome: document.getElementById("btnMenuHome"),
     btnBasicsBack: document.getElementById("btnBasicsBack"),
     btnBasicsPrev: document.getElementById("btnBasicsPrev"),
     btnBasicsNext: document.getElementById("btnBasicsNext"),
     btnPickBack: document.getElementById("btnPickBack"),
     btnPracticeBack: document.getElementById("btnPracticeBack"),
+    pickKicker: document.getElementById("pickKicker"),
+    layerChallenge: document.getElementById("layerChallenge"),
+    challengeTitle: document.getElementById("challengeTitle"),
+    challengeLede: document.getElementById("challengeLede"),
+    challengeIdle: document.getElementById("challengeIdle"),
+    challengePlay: document.getElementById("challengePlay"),
+    challengeResult: document.getElementById("challengeResult"),
+    challengeInstrumentName: document.getElementById("challengeInstrumentName"),
+    btnChallengeStart: document.getElementById("btnChallengeStart"),
+    btnChallengeBack: document.getElementById("btnChallengeBack"),
+    challengeProgress: document.getElementById("challengeProgress"),
+    challengeWritten: document.getElementById("challengeWritten"),
+    btnChallengeReplay: document.getElementById("btnChallengeReplay"),
+    challengeOptions: document.getElementById("challengeOptions"),
+    challengeFeedback: document.getElementById("challengeFeedback"),
+    challengeFeedbackText: document.getElementById("challengeFeedbackText"),
+    challengeReveal: document.getElementById("challengeReveal"),
+    btnChallengeNext: document.getElementById("btnChallengeNext"),
+    challengeScore: document.getElementById("challengeScore"),
+    challengeScoreNote: document.getElementById("challengeScoreNote"),
+    btnChallengeAgain: document.getElementById("btnChallengeAgain"),
+    btnChallengeToMenu: document.getElementById("btnChallengeToMenu"),
   };
 
   /** 音樂基礎課程（標題預填自 YouTube oEmbed；開啟時再嘗試更新） */
@@ -83,6 +107,15 @@
     noteMode: "scale", // scale | chromatic
     flowLayer: "home",
     flowBusy: false,
+    pickMode: "practice", // practice | challenge
+  };
+
+  const challengeState = {
+    instrumentId: "flute",
+    session: null,
+    qIndex: 0,
+    score: 0,
+    awaitingNext: false,
   };
 
   const FLOW_MS = 420;
@@ -1714,6 +1747,185 @@
     resumeAudioAfterForeground();
   });
 
+  /** —— 指法挑戰 —— */
+  function challengeInstrument() {
+    return Band.getById(challengeState.instrumentId);
+  }
+
+  function captureFingeringHtml(instId, note) {
+    if (!els.fingeringStage || !note) return "";
+    const host = document.createElement("div");
+    host.className = "challenge-fingering-capture";
+    const prevId = state.instrumentId;
+    const prevStage = els.fingeringStage;
+    state.instrumentId = instId;
+    els.fingeringStage = host;
+    try {
+      renderFingering(note);
+    } catch (_) {
+      host.innerHTML = `<p class="challenge-option-fallback">${note.label || ""}</p>`;
+    }
+    els.fingeringStage = prevStage;
+    state.instrumentId = prevId;
+    return host.innerHTML || `<p class="challenge-option-fallback">${note.label || ""}</p>`;
+  }
+
+  function showChallengePhase(phase) {
+    if (els.challengeIdle) els.challengeIdle.hidden = phase !== "idle";
+    if (els.challengePlay) els.challengePlay.hidden = phase !== "play";
+    if (els.challengeResult) els.challengeResult.hidden = phase !== "result";
+  }
+
+  function resetChallengeUiToIdle() {
+    challengeState.session = null;
+    challengeState.qIndex = 0;
+    challengeState.score = 0;
+    challengeState.awaitingNext = false;
+    const inst = challengeInstrument();
+    if (els.challengeTitle) els.challengeTitle.textContent = `${inst.nameZh}指法挑戰`;
+    if (els.challengeInstrumentName) {
+      els.challengeInstrumentName.textContent = `${inst.nameZh}（${inst.name}）`;
+    }
+    if (els.challengeFeedback) els.challengeFeedback.hidden = true;
+    if (els.challengeOptions) els.challengeOptions.innerHTML = "";
+    showChallengePhase("idle");
+  }
+
+  function openChallengeForInstrument(instId) {
+    stopTuner();
+    stopPlayback(false);
+    challengeState.instrumentId = instId;
+    resetChallengeUiToIdle();
+    try {
+      ensureAudioSync();
+      unlockAudioBuffer();
+    } catch (_) {}
+    showLayer("challenge");
+  }
+
+  function playChallengePromptTone() {
+    const q = challengeState.session?.questions?.[challengeState.qIndex];
+    if (!q?.prompt) return;
+    try {
+      ensureAudioSync();
+      unlockAudioBuffer();
+      playPracticeTone(midiToHz(q.prompt.concertMidi), 0.85);
+    } catch (_) {}
+  }
+
+  function renderChallengeQuestion() {
+    const session = challengeState.session;
+    if (!session) return;
+    const q = session.questions[challengeState.qIndex];
+    if (!q) return;
+    challengeState.awaitingNext = false;
+    if (els.challengeFeedback) els.challengeFeedback.hidden = true;
+    if (els.challengeReveal) els.challengeReveal.innerHTML = "";
+    if (els.challengeProgress) {
+      els.challengeProgress.textContent = `${challengeState.qIndex + 1} / ${session.questions.length}`;
+    }
+    const writtenLabel = q.prompt.writtenNameDisplay || Band.displayPitchName(q.prompt.writtenName);
+    if (els.challengeWritten) {
+      els.challengeWritten.innerHTML = `<span class="pitch-name">${writtenLabel}</span><span class="solfege">(${q.prompt.solfege}, ${q.prompt.jianpu})</span>`;
+    }
+    if (els.challengeOptions) {
+      els.challengeOptions.innerHTML = "";
+      q.options.forEach((note, i) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "challenge-option";
+        btn.setAttribute("role", "listitem");
+        btn.dataset.index = String(i);
+        btn.innerHTML = `<div class="challenge-option-chart">${captureFingeringHtml(
+          challengeState.instrumentId,
+          note
+        )}</div><span class="challenge-option-label">${note.label || ""}</span>`;
+        btn.addEventListener("click", () => onChallengeAnswer(i));
+        els.challengeOptions.appendChild(btn);
+      });
+    }
+    showChallengePhase("play");
+    playChallengePromptTone();
+  }
+
+  function onChallengeAnswer(chosenIndex) {
+    if (challengeState.awaitingNext) return;
+    const q = challengeState.session?.questions?.[challengeState.qIndex];
+    if (!q) return;
+    challengeState.awaitingNext = true;
+    const ok = Challenge.grade(q, chosenIndex);
+    if (ok) challengeState.score += 1;
+    if (els.challengeOptions) {
+      els.challengeOptions.querySelectorAll(".challenge-option").forEach((btn, i) => {
+        btn.disabled = true;
+        if (i === q.correctIndex) btn.classList.add("is-correct");
+        if (i === chosenIndex && !ok) btn.classList.add("is-wrong");
+      });
+    }
+    if (ok) {
+      if (els.challengeFeedbackText) els.challengeFeedbackText.textContent = "答對了！";
+      if (els.challengeReveal) els.challengeReveal.innerHTML = "";
+      if (els.challengeFeedback) els.challengeFeedback.hidden = false;
+      if (els.btnChallengeNext) els.btnChallengeNext.textContent =
+        challengeState.qIndex + 1 >= challengeState.session.questions.length ? "看結果" : "下一題";
+      return;
+    }
+    if (els.challengeFeedbackText) els.challengeFeedbackText.textContent = "答錯了，正確指法是：";
+    if (els.challengeReveal) {
+      els.challengeReveal.innerHTML = `<div class="challenge-option-chart">${captureFingeringHtml(
+        challengeState.instrumentId,
+        q.prompt
+      )}</div><span class="challenge-option-label">${q.prompt.label || ""}</span>`;
+    }
+    if (els.challengeFeedback) els.challengeFeedback.hidden = false;
+    if (els.btnChallengeNext) {
+      els.btnChallengeNext.textContent =
+        challengeState.qIndex + 1 >= challengeState.session.questions.length ? "看結果" : "下一題";
+    }
+  }
+
+  function advanceChallenge() {
+    if (!challengeState.session) return;
+    if (challengeState.qIndex + 1 >= challengeState.session.questions.length) {
+      finishChallenge();
+      return;
+    }
+    challengeState.qIndex += 1;
+    renderChallengeQuestion();
+  }
+
+  function finishChallenge() {
+    const total = challengeState.session?.questions?.length || 5;
+    if (els.challengeScore) els.challengeScore.textContent = `${challengeState.score} / ${total}`;
+    if (els.challengeScoreNote) {
+      els.challengeScoreNote.textContent =
+        challengeState.score === total ? "全對！太厲害了" : "再練一次音階指法會更熟喔";
+    }
+    showChallengePhase("result");
+  }
+
+  function startChallengeSession() {
+    stopTuner();
+    stopPlayback(false);
+    const inst = challengeInstrument();
+    challengeState.session = Challenge.buildSession(inst, { questionCount: 5, optionCount: 3 });
+    challengeState.qIndex = 0;
+    challengeState.score = 0;
+    try {
+      ensureAudioSync();
+      unlockAudioBuffer();
+    } catch (_) {}
+    renderChallengeQuestion();
+  }
+
+  function openInstrumentPicker(mode) {
+    state.pickMode = mode === "challenge" ? "challenge" : "practice";
+    if (els.pickKicker) {
+      els.pickKicker.textContent = state.pickMode === "challenge" ? "指法挑戰" : "音階練習";
+    }
+    showLayer("instruments");
+  }
+
   /** —— Flow navigation —— */
   function layerEl(name) {
     return (
@@ -1723,6 +1935,7 @@
         basics: els.layerBasics,
         instruments: els.layerInstruments,
         practice: els.layerPractice,
+        challenge: els.layerChallenge,
       }[name] || null
     );
   }
@@ -1872,6 +2085,10 @@
       btn.setAttribute("role", "listitem");
       btn.innerHTML = `${inst.nameZh}<small>${inst.name}</small>`;
       btn.addEventListener("click", () => {
+        if (state.pickMode === "challenge") {
+          openChallengeForInstrument(inst.id);
+          return;
+        }
         stopTuner();
         stopPlayback(false);
         state.instrumentId = inst.id;
@@ -1915,10 +2132,42 @@
     els.btnBasicsCourse.addEventListener("click", () => openBasicsCourse());
   }
   if (els.btnScalePractice) {
-    els.btnScalePractice.addEventListener("click", () => showLayer("instruments"));
+    els.btnScalePractice.addEventListener("click", () => openInstrumentPicker("practice"));
+  }
+  if (els.btnFingeringChallenge) {
+    els.btnFingeringChallenge.addEventListener("click", () => openInstrumentPicker("challenge"));
   }
   if (els.btnMenuHome) {
     els.btnMenuHome.addEventListener("click", () => showLayer("home"));
+  }
+  if (els.btnChallengeBack) {
+    els.btnChallengeBack.addEventListener("click", () => {
+      stopTuner();
+      stopPlayback(false);
+      showLayer("menu");
+    });
+  }
+  if (els.btnChallengeStart) {
+    els.btnChallengeStart.addEventListener("click", () => startChallengeSession());
+  }
+  if (els.btnChallengeReplay) {
+    els.btnChallengeReplay.addEventListener("click", () => playChallengePromptTone());
+  }
+  if (els.btnChallengeNext) {
+    els.btnChallengeNext.addEventListener("click", () => advanceChallenge());
+  }
+  if (els.btnChallengeAgain) {
+    els.btnChallengeAgain.addEventListener("click", () => {
+      resetChallengeUiToIdle();
+      startChallengeSession();
+    });
+  }
+  if (els.btnChallengeToMenu) {
+    els.btnChallengeToMenu.addEventListener("click", () => {
+      stopTuner();
+      stopPlayback(false);
+      showLayer("menu");
+    });
   }
   if (els.btnBasicsBack) {
     els.btnBasicsBack.addEventListener("click", () => showLayer("menu"));

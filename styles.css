@@ -449,6 +449,188 @@ body[data-flow="practice"] {
     inset 0 1px 0 rgba(255, 248, 240, 0.45);
 }
 
+/* —— 指法挑戰 —— */
+.challenge-panel {
+  width: min(920px, 100%);
+  margin: 0 auto;
+}
+
+.challenge-idle,
+.challenge-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.challenge-instrument {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--brass-deep);
+}
+
+.challenge-play {
+  margin-top: 1rem;
+}
+
+.challenge-progress {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.challenge-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.challenge-prompt .pitch.written {
+  margin: 0;
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+}
+
+.challenge-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.challenge-option {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.55rem;
+  border: 1px solid rgba(140, 90, 45, 0.28);
+  border-radius: 0.85rem;
+  background: #fff8f0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  min-height: 8rem;
+}
+
+.challenge-option:hover:not(:disabled) {
+  border-color: var(--brass);
+  background: rgba(196, 120, 58, 0.1);
+}
+
+.challenge-option.is-correct {
+  border-color: #0f8a3a;
+  box-shadow: 0 0 0 2px rgba(61, 220, 106, 0.45);
+}
+
+.challenge-option.is-wrong {
+  border-color: #b33;
+  opacity: 0.85;
+}
+
+.challenge-option:disabled {
+  cursor: default;
+}
+
+.challenge-option-chart {
+  width: 100%;
+  max-height: 10rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.challenge-option-chart .ww-svg,
+.challenge-option-chart .valve-board,
+.challenge-option-chart .trombone-svg,
+.challenge-option-chart .horn-valve-board,
+.challenge-option-chart .piano-board {
+  transform: scale(0.55);
+  transform-origin: center center;
+  max-width: none;
+}
+
+.challenge-option-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.challenge-option-fallback {
+  margin: 0;
+  padding: 1rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.challenge-feedback {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.challenge-feedback p {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  color: var(--brass-deep);
+}
+
+.challenge-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.5rem auto 0.85rem;
+  max-width: 14rem;
+  padding: 0.5rem;
+  border-radius: 0.85rem;
+  background: rgba(196, 120, 58, 0.08);
+}
+
+.challenge-score {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 700;
+}
+
+.challenge-score-note {
+  margin: 0;
+  color: var(--muted);
+}
+
+.challenge-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .challenge-options {
+    grid-template-columns: 1fr;
+  }
+
+  .challenge-option-chart {
+    max-height: 8.5rem;
+  }
+
+  .challenge-option-chart .ww-svg,
+  .challenge-option-chart .valve-board,
+  .challenge-option-chart .trombone-svg,
+  .challenge-option-chart .horn-valve-board,
+  .challenge-option-chart .piano-board {
+    transform: scale(0.48);
+  }
+}
+
 .basics-panel {
   width: min(42rem, 100%);
   max-height: calc(100vh - 2rem);

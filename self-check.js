@@ -10,11 +10,14 @@ const vm = require("vm");
 const root = __dirname;
 const instrumentsSrc = fs.readFileSync(path.join(root, "instruments.js"), "utf8");
 const timingSrc = fs.readFileSync(path.join(root, "practice-timing.js"), "utf8");
+const challengeSrc = fs.readFileSync(path.join(root, "fingering-challenge.js"), "utf8");
 const sandbox = { window: {}, console };
 vm.runInNewContext(instrumentsSrc, sandbox);
 vm.runInNewContext(timingSrc, sandbox);
+vm.runInNewContext(challengeSrc, sandbox);
 const Band = sandbox.window.BandInstruments;
 const Timing = sandbox.window.PracticeTiming;
+const Challenge = sandbox.window.FingeringChallenge;
 
 let passed = 0;
 let failed = 0;
@@ -122,6 +125,50 @@ const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 check("載入 PracticeTiming", !!Timing && typeof Timing.buildBeatPlan === "function");
 check("index 載入 practice-timing.js", /practice-timing\.js/.test(html));
 check("app 使用 PracticeTiming", /window\.PracticeTiming|Timing\.planSession|Timing\.stepTiming/.test(app));
+check("載入 FingeringChallenge", !!Challenge && typeof Challenge.buildSession === "function");
+check("index 載入 fingering-challenge.js", /fingering-challenge\.js/.test(html));
+check("指法挑戰選單入口", /btnFingeringChallenge/.test(html) && /指法挑戰/.test(html));
+check("指法挑戰 flow-layer", /data-layer="challenge"/.test(html) || /id="layerChallenge"/.test(html));
+
+(() => {
+  let seq = 0;
+  const rng = () => {
+    seq += 1;
+    return (seq * 0.17) % 1;
+  };
+  const flute = Band.getById("flute");
+  const scale = Challenge.scaleNotes(flute);
+  check("長笛音階音數量合理", scale.length >= 5 && scale.length <= 13, String(scale.length));
+  const session = Challenge.buildSession(flute, { questionCount: 5, optionCount: 3, rng });
+  check("一局 5 題", session.questions.length === 5);
+  check(
+    "每題 3 選且含正解",
+    session.questions.every((q) => q.options.length === 3 && q.correctIndex >= 0 && q.options[q.correctIndex] === q.prompt)
+  );
+  check(
+    "干擾項優先不同指法指紋",
+    session.questions.every((q) => {
+      const cfp = Challenge.fingeringFingerprint(q.prompt);
+      const others = q.options.filter((_, i) => i !== q.correctIndex);
+      const distinct = others.filter((n) => Challenge.fingeringFingerprint(n) !== cfp).length;
+      return distinct === others.length || distinct >= 1;
+    })
+  );
+  check("app 綁定挑戰流程", /openChallengeForInstrument|startChallengeSession|FingeringChallenge/.test(app));
+  const q0 = session.questions[0];
+  check("grade 正解為 true", Challenge.grade(q0, q0.correctIndex) === true);
+  check(
+    "grade 錯選為 false",
+    Challenge.grade(q0, (q0.correctIndex + 1) % 3) === false
+  );
+  for (const inst of Band.instruments) {
+    const s = Challenge.buildSession(inst, { questionCount: 5, optionCount: 3, rng });
+    check(
+      `${inst.name} 可建挑戰局`,
+      s.questions.length === 5 && s.questions.every((q) => q.options.length === 3)
+    );
+  }
+})();
 
 check("無頻率欄", !/id="freqDisplay"/.test(html) && !/頻率/.test(html.split("footer")[0]));
 check("譜面音在實音標籤之前", html.indexOf("譜面音") < html.indexOf('id="concertFloat"'));

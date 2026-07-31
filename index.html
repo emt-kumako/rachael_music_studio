@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260728b" />
+  <link rel="stylesheet" href="styles.css?v=20260731a" />
 </head>
 <body>
   <!-- 首頁 BGM：點擊進入後自 0:01.15 播至 0:20.00 -->
@@ -62,6 +62,7 @@
       <div class="menu-actions">
         <button type="button" class="menu-action" id="btnBasicsCourse">音樂基礎課程</button>
         <button type="button" class="menu-action" id="btnScalePractice">音階練習</button>
+        <button type="button" class="menu-action" id="btnFingeringChallenge">指法挑戰</button>
       </div>
       <button type="button" class="flow-back subtle" id="btnMenuHome">返回首頁</button>
     </div>
@@ -101,10 +102,56 @@
   <!-- 3. 樂器選擇 2×5 -->
   <section id="layerInstruments" class="flow-layer" data-layer="instruments" aria-label="選擇樂器" hidden>
     <div class="pick-panel">
-      <p class="menu-kicker">音階練習</p>
+      <p class="menu-kicker" id="pickKicker">音階練習</p>
       <h2 class="menu-title">選擇樂器</h2>
       <div class="instrument-grid" id="instrumentGrid" role="list"></div>
       <button type="button" class="flow-back" id="btnPickBack">返回教室</button>
+    </div>
+  </section>
+
+  <!-- 3b. 指法挑戰 -->
+  <section id="layerChallenge" class="flow-layer app" data-layer="challenge" aria-label="指法挑戰" hidden>
+    <div class="challenge-panel">
+      <header class="brand">
+        <div class="brand-top">
+          <button type="button" class="flow-back inline" id="btnChallengeBack">← 返回教室</button>
+          <p class="brand-mark">瑞瑞老師的管樂教室</p>
+        </div>
+        <h1 id="challengeTitle">指法挑戰</h1>
+        <p class="lede" id="challengeLede">看譜面音，選出正確指法 · 共 5 題</p>
+      </header>
+
+      <div id="challengeIdle" class="challenge-idle">
+        <p class="challenge-instrument" id="challengeInstrumentName">—</p>
+        <button type="button" class="btn primary" id="btnChallengeStart">開始挑戰</button>
+      </div>
+
+      <div id="challengePlay" class="challenge-play" hidden>
+        <p class="challenge-progress" id="challengeProgress">1 / 5</p>
+        <div class="challenge-prompt">
+          <span class="label">譜面音</span>
+          <p class="pitch written" id="challengeWritten">
+            <span class="pitch-name">C</span>
+            <span class="solfege">(do, 1)</span>
+          </p>
+          <button type="button" class="btn ghost" id="btnChallengeReplay">再聽一次</button>
+        </div>
+        <div class="challenge-options" id="challengeOptions" role="list"></div>
+        <div id="challengeFeedback" class="challenge-feedback" hidden>
+          <p id="challengeFeedbackText"></p>
+          <div id="challengeReveal" class="challenge-reveal"></div>
+          <button type="button" class="btn primary" id="btnChallengeNext">下一題</button>
+        </div>
+      </div>
+
+      <div id="challengeResult" class="challenge-result" hidden>
+        <p class="challenge-score" id="challengeScore">0 / 5</p>
+        <p class="challenge-score-note" id="challengeScoreNote">本次挑戰結束</p>
+        <div class="challenge-result-actions">
+          <button type="button" class="btn primary" id="btnChallengeAgain">再玩一次</button>
+          <button type="button" class="btn ghost" id="btnChallengeToMenu">返回教室</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -224,6 +271,7 @@
 
   <script src="instruments.js"></script>
   <script src="practice-timing.js"></script>
+  <script src="fingering-challenge.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

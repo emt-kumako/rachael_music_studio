@@ -173,7 +173,9 @@ for (const k of UiSounds.allKinds()) {
   check(`音效檔存在 ${k}`, fs.existsSync(path.join(root, rel)), rel);
 }
 check("挑戰 phase 強制 hidden", /\.challenge-idle\[hidden\]/.test(css) && /display:\s*none\s*!important/.test(css));
-check("返回首頁空白再淡入", /replayHomeEntranceBlankThenFade/.test(app));
+check("返回首頁空白再淡入", /replayHomeEntranceBlankThenFade/.test(app) && /blankHomeHeroForReplay/.test(app));
+check("返回首頁轉場即空白", /enteringHome && homeGatePassed[\s\S]{0,80}blankHomeHeroForReplay/.test(app));
+check("挑戰 idle 隱藏 lede", /challengeLede\.hidden = vm\.phase !== \"play\"/.test(app));
 check("app 播放 UI 音效", /function playUiSound/.test(app) && /playUiSound\("choose"\)/.test(app));
 
 (() => {
@@ -268,6 +270,11 @@ check("app 播放 UI 音效", /function playUiSound/.test(app) && /playUiSound\(
     check("Shell start → play", renders[renders.length - 1].phase === "play");
     check("Shell start 三選項", (renders[renders.length - 1].options || []).length === 3);
     check("Shell start 播題音", tones.length >= 1);
+    check(
+      "Shell VM 用 prompt 欄位非 HTML",
+      !!renders[renders.length - 1].prompt?.writtenLabel &&
+        renders[renders.length - 1].writtenHtml == null
+    );
     const q = shell._state.session.questions[0];
     const bad = (q.correctIndex + 1) % 3;
     shell.answer(bad);

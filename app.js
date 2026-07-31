@@ -319,14 +319,19 @@
     }
   }
 
-  /** 返回首頁：先空白，再完整重播 logo／文案／按鈕淡入 */
-  function replayHomeEntranceBlankThenFade() {
+  /** 返回首頁：立刻藏起 hero，避免轉場期間露出舊內容 */
+  function blankHomeHeroForReplay() {
     if (els.homeGate) els.homeGate.hidden = true;
     homeGatePassed = true;
     if (els.homeHero) {
       els.homeHero.classList.remove("is-intro");
       els.homeHero.hidden = true;
     }
+  }
+
+  /** 返回首頁：先空白，再完整重播 logo／文案／按鈕淡入 */
+  function replayHomeEntranceBlankThenFade() {
+    blankHomeHeroForReplay();
     window.setTimeout(() => {
       if (state.flowLayer !== "home") return;
       if (!homeBgmSessionDone) {
@@ -1183,10 +1188,17 @@
     if (els.challengeIdle) els.challengeIdle.hidden = vm.phase !== "idle";
     if (els.challengePlay) els.challengePlay.hidden = vm.phase !== "play";
     if (els.challengeResult) els.challengeResult.hidden = vm.phase !== "result";
+    // idle：規格只要標題／樂器名／開始；lede 僅 play 顯示
+    if (els.challengeLede) els.challengeLede.hidden = vm.phase !== "play";
     if (els.challengeTitle) els.challengeTitle.textContent = vm.title || "";
     if (els.challengeInstrumentName) els.challengeInstrumentName.textContent = vm.instrumentLabel || "";
     if (els.challengeProgress) els.challengeProgress.textContent = vm.progress || "";
-    if (els.challengeWritten) els.challengeWritten.innerHTML = vm.writtenHtml || "";
+    if (els.challengeWritten) {
+      const p = vm.prompt;
+      els.challengeWritten.innerHTML = p
+        ? `<span class="pitch-name">${p.writtenLabel || ""}</span><span class="solfege">(${p.solfege || ""}, ${p.jianpu || ""})</span>`
+        : "";
+    }
     if (els.btnChallengeNext) els.btnChallengeNext.textContent = vm.nextLabel || "下一題";
     if (els.challengeScore) els.challengeScore.textContent = vm.scoreText || "";
     if (els.challengeScoreNote) els.challengeScoreNote.textContent = vm.scoreNote || "";
@@ -1366,6 +1378,10 @@
     }
     if (leavingHome) {
       fadeOutHomeBgm(HOME_BGM.exitFadeSec);
+    }
+    // 轉場一開始就空白，避免 FLOW_MS 期間露出上次 hero
+    if (enteringHome && homeGatePassed) {
+      blankHomeHeroForReplay();
     }
     if (prev && prev !== next) {
       prev.classList.add("is-leaving");

@@ -51,37 +51,37 @@ window.ChallengeShell = (function () {
       }
     }
 
-    function writtenHtmlFor(note) {
-      if (!note) return "";
-      const writtenLabel =
-        note.writtenNameDisplay || adapters.displayPitchName(note.writtenName || "");
-      return `<span class="pitch-name">${writtenLabel}</span><span class="solfege">(${note.solfege}, ${note.jianpu})</span>`;
+    function promptVm(note) {
+      if (!note) return null;
+      return {
+        writtenLabel:
+          note.writtenNameDisplay || adapters.displayPitchName(note.writtenName || ""),
+        solfege: note.solfege || "",
+        jianpu: note.jianpu || "",
+      };
     }
 
     function optionsVm(q, marks) {
       if (!q?.options) return [];
-      return q.options.map((note, i) => {
-        const o = {
-          index: i,
-          chartHtml: chartFor(note),
-          disabled: !!(marks && marks.locked),
-          isCorrect: !!(marks && i === marks.correctIndex),
-          isWrong: !!(marks && marks.chosenIndex === i && !marks.ok),
-        };
-        return o;
-      });
+      return q.options.map((note, i) => ({
+        index: i,
+        chartHtml: chartFor(note),
+        disabled: !!(marks && marks.locked),
+        isCorrect: !!(marks && i === marks.correctIndex),
+        isWrong: !!(marks && marks.chosenIndex === i && !marks.ok),
+      }));
     }
 
-    function idleVm() {
+    function baseVm(phase) {
       const inst = instrument();
       const nameZh = (inst && inst.nameZh) || "";
       const name = (inst && inst.name) || "";
       return {
-        phase: "idle",
+        phase,
         title: `${nameZh}指法挑戰`,
         instrumentLabel: `${nameZh}（${name}）`,
         progress: "",
-        writtenHtml: "",
+        prompt: null,
         options: [],
         feedback: { hidden: true, text: "", revealHtml: "", revealLabel: "" },
         nextLabel: "下一題",
@@ -91,17 +91,25 @@ window.ChallengeShell = (function () {
       };
     }
 
+    function idleVm() {
+      return baseVm("idle");
+    }
+
     function playVm(marks) {
       const session = state.session;
       const q = currentQuestion();
       const total = session?.questions?.length || 0;
-      const nextLabel = isLastQuestion() ? "看結果" : "下一題";
-      let feedback = { hidden: true, text: "", revealHtml: "", revealLabel: "" };
+      const vm = baseVm("play");
+      vm.progress = total ? `${state.qIndex + 1} / ${total}` : "";
+      vm.prompt = promptVm(q && q.prompt);
+      vm.options = optionsVm(q, marks);
+      vm.nextLabel = isLastQuestion() ? "看結果" : "下一題";
+      vm.awaitingNext = !!state.awaitingNext;
       if (marks && marks.locked) {
         if (marks.ok) {
-          feedback = { hidden: false, text: "答對了！", revealHtml: "", revealLabel: "" };
+          vm.feedback = { hidden: false, text: "答對了！", revealHtml: "", revealLabel: "" };
         } else {
-          feedback = {
+          vm.feedback = {
             hidden: false,
             text: "答錯了，正確指法是：",
             revealHtml: chartFor(q.prompt),
@@ -109,37 +117,16 @@ window.ChallengeShell = (function () {
           };
         }
       }
-      return {
-        phase: "play",
-        title: idleVm().title,
-        instrumentLabel: idleVm().instrumentLabel,
-        progress: total ? `${state.qIndex + 1} / ${total}` : "",
-        writtenHtml: writtenHtmlFor(q && q.prompt),
-        options: optionsVm(q, marks),
-        feedback,
-        nextLabel,
-        scoreText: "",
-        scoreNote: "",
-        awaitingNext: !!state.awaitingNext,
-      };
+      return vm;
     }
 
     function resultVm() {
       const total = state.session?.questions?.length || 5;
-      return {
-        phase: "result",
-        title: idleVm().title,
-        instrumentLabel: idleVm().instrumentLabel,
-        progress: "",
-        writtenHtml: "",
-        options: [],
-        feedback: { hidden: true, text: "", revealHtml: "", revealLabel: "" },
-        nextLabel: "下一題",
-        scoreText: `${state.score} / ${total}`,
-        scoreNote:
-          state.score === total ? "全對！太厲害了" : "再練一次音階指法會更熟喔",
-        awaitingNext: false,
-      };
+      const vm = baseVm("result");
+      vm.scoreText = `${state.score} / ${total}`;
+      vm.scoreNote =
+        state.score === total ? "全對！太厲害了" : "再練一次音階指法會更熟喔";
+      return vm;
     }
 
     function paint(vm) {

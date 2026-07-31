@@ -14,7 +14,7 @@
 
 ## ChallengeShell
 
-指法挑戰 UI 流程殼：`ChallengeShell.create(adapters)` 提供 `open / start / answer / advance / replay / reset`。畫面經單一 `render(viewModel)`；進場停音／換層、題音、UI cue 走 adapters。題庫仍委派 `FingeringChallenge`。不含 DOM。
+指法挑戰 UI 流程殼：`ChallengeShell.create(adapters)` 提供 `open / start / answer / advance / replay / reset`。畫面經單一 `render(viewModel)`（譜面提示為結構化 `prompt` 欄位，HTML 組裝在 adapter）；進場停音／換層、題音、UI cue 走 adapters。題庫仍委派 `FingeringChallenge`。不含 DOM。
 
 ## FingeringCharts
 

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#f0e2d0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>瑞瑞老師的管樂教室</title>
+  <!-- ?v= 強迫瀏覽器／主畫面圖示換掉舊快取 -->
+  <link rel="shortcut icon" href="./favicon.ico?v=20260727g" />
+  <link rel="icon" href="./favicon.ico?v=20260727g" sizes="any" />
+  <link rel="icon" href="./assets/favicon.ico?v=20260727g" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png?v=20260727g" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/favicon-192.png?v=20260727g" />
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png?v=20260727g" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260728b" />
+</head>
+<body>
+  <!-- 首頁 BGM：點擊進入後自 0:01.15 播至 0:20.00 -->
+  <audio
+    id="homeBgm"
+    class="home-bgm-el"
+    preload="auto"
+    playsinline
+    webkit-playsinline
+    src="./assets/bigger-world-audio-logo.mp3"
+  ></audio>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <!-- 1. 首頁 -->
+  <section id="layerHome" class="flow-layer is-active" data-layer="home" aria-label="首頁">
+    <button type="button" class="home-gate" id="homeGate" aria-label="點擊進入">
+      <span class="home-gate-text">- 點擊進入 -</span>
+    </button>
+    <div class="home-hero" id="homeHero" hidden>
+      <img
+        class="home-logo"
+        id="homeLogo"
+        src="./assets/rachaels-music-logo.png"
+        alt="Rachael's Music"
+        width="1002"
+        height="527"
+        decoding="async"
+      />
+      <h1 class="home-title">瑞瑞老師的管樂教室</h1>
+      <p class="home-lede">音樂基礎 · 樂器指法/把位練習</p>
+      <button type="button" class="home-enter" id="btnEnterClassroom">進入教室</button>
+    </div>
+    <p class="home-credit" id="homeCredit">
+      本小工具由吟遊詩人張小熊肝膽製作。練習裡的樂器指法/把位，主要參考 Yamaha 公開樂器指法表、Tomplay 指法資料等，方便對照學習；若與您手中的樂器或老師教法略有出入，還請以現場指導為準。
+    </p>
+  </section>
+
+  <!-- 2. 教室選單 -->
+  <section id="layerMenu" class="flow-layer" data-layer="menu" aria-label="教室選單" hidden>
+    <div class="menu-panel">
+      <p class="menu-kicker">瑞瑞老師的管樂教室</p>
+      <h2 class="menu-title">今天想學習什麼？</h2>
+      <div class="menu-actions">
+        <button type="button" class="menu-action" id="btnBasicsCourse">音樂基礎課程</button>
+        <button type="button" class="menu-action" id="btnScalePractice">音階練習</button>
+      </div>
+      <button type="button" class="flow-back subtle" id="btnMenuHome">返回首頁</button>
+    </div>
+  </section>
+
+  <!-- 2b. 音樂基礎課程（單頁一堂課，不上下捲動） -->
+  <section id="layerBasics" class="flow-layer" data-layer="basics" aria-label="音樂基礎課程" hidden>
+    <div class="basics-panel">
+      <p class="menu-kicker">瑞瑞老師的管樂教室</p>
+      <h2 class="menu-title">音樂基礎課程</h2>
+      <p class="video-label" id="basicsLessonTitle">載入中…</p>
+      <div class="video-frame" id="basicsVideoFrame">
+        <iframe
+          id="basicsVideo"
+          src=""
+          title="音樂基礎課程"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          referrerpolicy="strict-origin-when-cross-origin"
+        ></iframe>
+        <div class="video-fallback" id="basicsFallback" hidden>
+          <img id="basicsThumb" alt="" />
+          <p class="video-fallback-msg" id="basicsFallbackMsg">
+            若出現錯誤 153，多半是開啟方式缺少網頁來源（例如直接雙擊 HTML）。請改用本機伺服器開啟，或先在 YouTube 觀看。
+          </p>
+          <a class="btn primary basics-yt-link" id="basicsWatchLink" href="#" target="_blank" rel="noopener noreferrer">在 YouTube 觀看</a>
+        </div>
+      </div>
+      <div class="basics-nav">
+        <button type="button" class="btn ghost basics-nav-btn" id="btnBasicsPrev" hidden>上一堂課</button>
+        <button type="button" class="btn primary basics-nav-btn" id="btnBasicsNext">下一堂課</button>
+      </div>
+      <button type="button" class="flow-back" id="btnBasicsBack">返回教室</button>
+    </div>
+  </section>
+
+  <!-- 3. 樂器選擇 2×5 -->
+  <section id="layerInstruments" class="flow-layer" data-layer="instruments" aria-label="選擇樂器" hidden>
+    <div class="pick-panel">
+      <p class="menu-kicker">音階練習</p>
+      <h2 class="menu-title">選擇樂器</h2>
+      <div class="instrument-grid" id="instrumentGrid" role="list"></div>
+      <button type="button" class="flow-back" id="btnPickBack">返回教室</button>
+    </div>
+  </section>
+
+  <!-- 4. 練習頁（原主程式） -->
+  <main id="layerPractice" class="flow-layer app" data-layer="practice" aria-label="練習" hidden>
+    <header class="brand">
+      <div class="brand-top">
+        <button type="button" class="flow-back inline" id="btnPracticeBack">← 返回教室</button>
+        <p class="brand-mark">瑞瑞老師的管樂教室</p>
+      </div>
+      <h1 id="appTitle">音階指法練習</h1>
+      <p class="lede">依各樂器調音音域 · 標準音 A<sub>4</sub> = 442 Hz · 4/4</p>
+    </header>
+
+    <section class="toolbar">
+      <label class="select-field instrument-select">
+        樂器
+        <select id="instrument"></select>
+      </label>
+
+      <div class="tuner-box">
+        <span class="tuner-label" id="tunerLabel">B♭</span>
+        <button type="button" class="btn tuner" id="btnTuner">Tuner 調音器</button>
+      </div>
+    </section>
+
+    <section class="stage" id="practiceStage" aria-live="polite">
+      <div class="beat-lights" id="beatLights" aria-hidden="true">
+        <span class="beat-lamp beat-1" data-beat="0"></span>
+        <span class="beat-lamp beat-2" data-beat="1"></span>
+        <span class="beat-lamp beat-3" data-beat="2"></span>
+        <span class="beat-lamp beat-4" data-beat="3"></span>
+      </div>
+
+      <div class="stage-main" id="stageMain">
+        <div class="pitch-written-wrap" id="pitchWrittenWrap">
+          <span class="label">譜面音</span>
+          <p class="pitch written" id="writtenNote">
+            <span class="pitch-name">C</span>
+            <span class="solfege">(do, 1)</span>
+          </p>
+        </div>
+
+        <div class="fingering-stage">
+          <div id="fingeringStage" class="fingering-main"></div>
+        </div>
+
+        <p class="fingering-text" id="fingeringText">開管（0）</p>
+      </div>
+
+      <div class="pitch-concert-float" id="concertFloat">
+        <span class="label">實音</span>
+        <p class="pitch concert" id="concertNote">B♭</p>
+      </div>
+
+      <p class="progress" id="progressText">1 / 13</p>
+    </section>
+
+    <section class="controls">
+      <div class="transport">
+        <button type="button" class="btn ghost" id="btnPrev" aria-label="前一個音">◀</button>
+        <button type="button" class="btn primary" id="btnPlay">開始練習</button>
+        <button type="button" class="btn ghost" id="btnNext" aria-label="下一個音">▶</button>
+        <button type="button" class="btn ghost" id="btnStop" aria-label="停止">■</button>
+      </div>
+
+      <label class="slider-field">
+        <span>速度 <strong id="tempoValue">60</strong> BPM · <em id="tempoMarkName">—</em></span>
+        <input type="range" id="tempo" min="30" max="144" value="60" step="1" />
+        <div class="tempo-marks" id="tempoMarks"></div>
+      </label>
+
+      <div class="option-row beats-row">
+        <span class="field-label">每音拍數（拍號 4/4）</span>
+        <div class="segmented beats-segmented" role="group" aria-label="每音拍數">
+          <label><input type="radio" name="beats" value="1" /><span>1 拍</span></label>
+          <label><input type="radio" name="beats" value="2" /><span>2 拍</span></label>
+          <label><input type="radio" name="beats" value="4" checked /><span>4 拍</span></label>
+        </div>
+      </div>
+
+      <label class="slider-field">
+        <span>音量</span>
+        <input type="range" id="volume" min="0" max="100" value="70" step="1" />
+      </label>
+
+      <div class="option-row">
+        <label class="check">
+          <input type="checkbox" id="loop" />
+          𝄆 反覆 𝄇
+        </label>
+        <label class="select-field">
+          方向
+          <select id="direction">
+            <option value="up">上行</option>
+            <option value="down">下行</option>
+            <option value="both">上行後下行</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="note-strip" aria-label="記譜音列">
+      <div class="option-row strip-mode-row">
+        <div class="segmented strip-mode-segmented" role="group" aria-label="音階或半音階">
+          <label><input type="radio" name="noteMode" value="scale" checked /><span>音階</span></label>
+          <label><input type="radio" name="noteMode" value="chromatic" /><span>半音階</span></label>
+        </div>
+      </div>
+      <div class="strip" id="noteStrip"></div>
+    </section>
+
+    <footer class="meta">
+      <p id="metaText">全員實音 B♭3–B♭4 · 指法參考 Yamaha 公開指法/把位表</p>
+    </footer>
+  </main>
+
+  <script src="instruments.js"></script>
+  <script src="practice-timing.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

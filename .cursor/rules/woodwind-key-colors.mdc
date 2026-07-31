@@ -1,0 +1,16 @@
+---
+description: 木管指法圖按鍵開合填色規則
+globs: "**/*.{js,css,html}"
+alwaysApply: true
+---
+
+# 木管按鍵視覺規則
+
+- **空鍵（未按/open）**：實心**灰白**（約 `#f2efe6`），深色描邊。
+- **按鍵（按下/pressed）**：實心**黑色**（`#14100a`），並帶**微亮金暈**背景（同小號亮起邏輯）。
+- **樂器底色**：黃銅/米金（如 `#d8b56a`），須與按鍵填色明顯區隔。
+- 薩克斯按鍵幾何以 [`assets/Saxophone finger chart.py`](assets/Saxophone%20finger%20chart.py) 內嵌 SVG 為準。
+- 豎笛按鍵幾何以 [`assets/clarinet finger chart.py`](assets/clarinet%20finger%20chart.py) 為準（viewBox `0 0 220 560`）。
+- 豎笛 C4→C5（略過 Alternate）：C＝T·L123；C♯＝＋Cs；D＝T·L12；D♯＝T·L123·LLowC；E＝T·L1；F＝T；F♯＝L2；G＝開管；G♯＝Gs；A＝A；A♯＝Reg·A；B＝Reg·T·六孔·Trill3（右側鍵叢由下數第 2）；C5＝Reg·T·六孔·LowC。
+- 中音：記譜 **G4/G5**（高音譜號第二線 G4 → 實音中央 C 下方 **B♭3**；高八度 G5/B♭4）；指法對齊圖 1 之 G → 圖 2 之 G（B♭ 用側鍵 1·2·SideBb；八度鍵對應圖左上橢圓）。
+- 次中音：記譜 **C4/C5**（實音 B♭2/B♭3）；指法對齊圖 1 之 C → 圖 2 之 C。

@@ -1,0 +1,2156 @@
+:root {
+  /* 全站統一：暖色米金＋對水彩背景的玫瑰金 CTA */
+  --ink: #2c1810;
+  --paper: #fff8f0;
+  --brass: #c4783a;
+  --brass-deep: #9a5520;
+  --brass-soft: #e8a060;
+  --silver: #d4c4b0;
+  --mist: rgba(44, 24, 16, 0.1);
+  --muted: rgba(44, 24, 16, 0.62);
+  --muted-soft: rgba(44, 24, 16, 0.48);
+  --surface: #fff4ea;
+  --surface-deep: #f7e6d6;
+  --shadow: 0 20px 48px rgba(90, 45, 20, 0.14);
+  /* 主按鈕：玫瑰砂金，在粉／米色底上更融、仍清楚可點 */
+  --cta-hi: #e6b896;
+  --cta-mid: #c98162;
+  --cta-lo: #9a5240;
+  --cta-ink: #2a140e;
+  --cta-glow: rgba(154, 82, 64, 0.26);
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-body: "Outfit", "Noto Sans TC", "Segoe UI", sans-serif;
+  --flow-ms: 420ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  min-height: 100dvh;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: manipulation;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: #f0e2d0;
+  line-height: 1.45;
+}
+
+/* 首頁/教室/選樂器/基礎課：鎖定單視窗，禁止整頁捲動 */
+html:has(body[data-flow="home"]),
+html:has(body[data-flow="menu"]),
+html:has(body[data-flow="instruments"]),
+html:has(body[data-flow="basics"]),
+body[data-flow="home"],
+body[data-flow="menu"],
+body[data-flow="instruments"],
+body[data-flow="basics"] {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body[data-flow="practice"] {
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: #f0e2d0;
+}
+
+.home-bgm-el {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* —— Flow layers —— */
+.flow-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1.25rem, env(safe-area-inset-top, 0px))
+    max(1.25rem, env(safe-area-inset-right, 0px))
+    max(1.25rem, env(safe-area-inset-bottom, 0px))
+    max(1.25rem, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow: hidden;
+  overscroll-behavior: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(18px);
+  transition:
+    opacity var(--flow-ms) ease,
+    transform var(--flow-ms) ease,
+    visibility 0s linear var(--flow-ms);
+}
+
+.flow-layer.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition:
+    opacity var(--flow-ms) ease,
+    transform var(--flow-ms) ease,
+    visibility 0s linear 0s;
+}
+
+.flow-layer.is-leaving {
+  opacity: 0;
+  transform: translateY(-12px);
+  pointer-events: none;
+}
+
+/* 首頁：閘門置中、聲明貼底；允許溢出 */
+.flow-layer[data-layer="home"] {
+  overflow: visible;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 練習頁：取消全螢幕 fixed 置中，改為可捲動文件流 */
+.flow-layer.app {
+  position: relative;
+  display: block;
+  inset: auto;
+  min-height: 100vh;
+  width: min(920px, calc(100% - 2rem));
+  max-width: 100%;
+  margin: 0 auto;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-x: none;
+  box-sizing: border-box;
+  transform: translateY(24px);
+}
+
+.flow-layer.app.is-active {
+  transform: translateY(0);
+}
+
+.home-hero {
+  width: min(36rem, 100%);
+  max-height: none;
+  max-width: 100%;
+  overflow: visible;
+  text-align: center;
+  box-sizing: border-box;
+  padding-bottom: 0.5rem;
+}
+
+.home-hero[hidden] {
+  display: none !important;
+}
+
+.menu-panel,
+.pick-panel {
+  width: min(36rem, 100%);
+  max-height: calc(100vh - 2.5rem);
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.pick-panel {
+  width: min(28rem, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+}
+
+.pick-panel .menu-title {
+  margin: 0 0 0.35rem;
+}
+
+.pick-panel .instrument-grid {
+  margin: 0 auto;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.pick-panel .flow-back {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.home-logo {
+  display: block;
+  width: min(32rem, 94%);
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1002 / 527;
+  margin: 0 auto 1.35rem;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 10px 22px rgba(44, 24, 16, 0.12));
+  background: transparent;
+  opacity: 0;
+  transform: translateY(52px);
+}
+
+.home-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.85rem, 5.5vw, 2.85rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  opacity: 0;
+  text-shadow: 0 1px 0 rgba(255, 248, 240, 0.55);
+}
+
+.home-lede {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  opacity: 0;
+}
+
+.home-enter {
+  appearance: none;
+  margin-top: 2.4rem;
+  border: 1px solid rgba(120, 55, 40, 0.28);
+  background: linear-gradient(180deg, var(--cta-hi) 0%, var(--cta-mid) 52%, var(--cta-lo) 100%);
+  color: var(--cta-ink);
+  border-radius: 999px;
+  padding: 0.85rem 1.8rem;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(40px);
+  box-shadow:
+    0 12px 28px var(--cta-glow),
+    inset 0 1px 0 rgba(255, 248, 240, 0.4);
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 0.35rem;
+}
+
+.home-enter:hover {
+  filter: brightness(1.04);
+  box-shadow:
+    0 14px 30px rgba(154, 82, 64, 0.32),
+    inset 0 1px 0 rgba(255, 248, 240, 0.45);
+}
+
+.home-enter:active {
+  filter: brightness(0.98);
+}
+
+/* 點擊閘門：閃動字樣 */
+.home-gate {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 1.25rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.home-gate[hidden] {
+  display: none !important;
+}
+
+.home-gate-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 3.6vw, 1.55rem);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 248, 240, 0.7);
+  animation: homeGateBlink 1.35s ease-in-out infinite;
+}
+
+/* 聲明：開頁即淡入，固定在首頁底部（字級再縮小 3px） */
+.home-credit {
+  position: absolute;
+  left: 50%;
+  bottom: max(0.85rem, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 2;
+  width: min(36rem, calc(100% - 2.5rem));
+  margin: 0;
+  padding: 0 0.35rem;
+  box-sizing: border-box;
+  font-size: clamp(calc(0.68rem - 3px), calc(1.7vw - 3px), calc(0.78rem - 3px));
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+  color: var(--muted-soft);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  animation: homeFade 1.1s 0.15s ease forwards;
+}
+
+/* 點擊後：Logo／進入教室＝由下而上；標題／副標＝淡入 */
+.home-hero.is-intro .home-logo {
+  animation: homeRise 1.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.home-hero.is-intro .home-enter {
+  animation:
+    homeRise 1.15s 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    homeEnterFloat 3.8s 1.65s ease-in-out infinite;
+}
+
+.home-hero.is-intro .home-title {
+  animation: homeFade 0.9s 0.28s ease forwards;
+}
+
+.home-hero.is-intro .home-lede {
+  animation: homeFade 0.9s 0.38s ease forwards;
+}
+
+@keyframes homeGateBlink {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes homeRise {
+  from {
+    opacity: 0;
+    transform: translateY(52px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes homeFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes homeEnterFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-logo,
+  .home-enter,
+  .home-title,
+  .home-lede,
+  .home-credit,
+  .home-gate-text {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+  }
+}
+
+.menu-kicker {
+  margin: 0 0 0.85rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+
+.menu-title {
+  margin: 0 0 1.8rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.menu-actions {
+  display: grid;
+  gap: 0.85rem;
+  justify-items: center;
+  width: min(18rem, 100%);
+  margin: 0 auto;
+}
+
+.menu-action {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 12rem;
+  border: 1px solid rgba(120, 55, 40, 0.28);
+  background: linear-gradient(180deg, var(--cta-hi) 0%, var(--cta-mid) 52%, var(--cta-lo) 100%);
+  color: var(--cta-ink);
+  border-radius: 1rem;
+  padding: 1.1rem 1.8rem;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  box-shadow:
+    0 12px 28px var(--cta-glow),
+    inset 0 1px 0 rgba(255, 248, 240, 0.4);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.menu-action:hover {
+  filter: brightness(1.04);
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 30px rgba(154, 82, 64, 0.32),
+    inset 0 1px 0 rgba(255, 248, 240, 0.45);
+}
+
+.basics-panel {
+  width: min(42rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  gap: 0.65rem;
+  padding: 0.15rem 0.1rem;
+  box-sizing: border-box;
+}
+
+.basics-panel .menu-title {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.video-label {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--brass-deep);
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.video-frame {
+  position: relative;
+  flex: 0 1 auto;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: min(48vh, 22rem);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  border: 1px solid rgba(140, 90, 45, 0.22);
+  background: rgba(255, 244, 232, 0.65);
+  box-shadow: 0 10px 28px rgba(90, 45, 20, 0.1);
+}
+
+.video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  background: #1a1206;
+  text-align: center;
+}
+
+.video-fallback[hidden] {
+  display: none !important;
+}
+
+.video-fallback img {
+  width: min(100%, 16rem);
+  border-radius: 0.5rem;
+  opacity: 0.92;
+}
+
+.video-fallback-msg {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(255, 248, 240, 0.88);
+}
+
+.basics-yt-link {
+  text-decoration: none;
+}
+
+.basics-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.basics-nav-btn {
+  min-width: 7.5rem;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.basics-panel .flow-back {
+  flex: 0 0 auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.instrument-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin: 0 auto 0.75rem;
+  width: 100%;
+}
+
+.instrument-pick {
+  appearance: none;
+  border: 1px solid rgba(150, 85, 65, 0.28);
+  background: #fff4ea;
+  color: var(--ink);
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.55rem;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(90, 45, 20, 0.08);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.instrument-pick small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--muted-soft);
+}
+
+.instrument-pick:hover {
+  background: #f3d8c6;
+  border-color: rgba(160, 80, 60, 0.45);
+  transform: translateY(-1px);
+}
+
+.flow-back {
+  appearance: none;
+  /* 上下各一行間距：返回教室／返回首頁 */
+  margin-top: 1em;
+  margin-bottom: 1em;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.flow-back:hover {
+  color: var(--brass-deep);
+}
+
+.flow-back.subtle {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  display: block;
+  width: 100%;
+}
+
+.flow-back.inline {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding: 0;
+  color: var(--brass-deep);
+  font-size: 0.88rem;
+}
+
+.app {
+  padding: 2.5rem 0 3rem;
+  color: var(--ink);
+}
+
+.brand {
+  margin-bottom: 1.4rem;
+}
+
+.brand-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.55rem;
+}
+
+.brand-mark {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: var(--brass-deep);
+}
+
+.brand h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  scroll-margin-top: max(0.35rem, env(safe-area-inset-top, 0px));
+}
+
+.lede {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+
+.lede sub {
+  font-size: 0.75em;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--mist);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(90, 45, 20, 0.06);
+}
+
+.instrument-select {
+  min-width: 12rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+  line-height: 1;
+}
+
+.tuner-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.tuner-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--brass-deep);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.btn.tuner {
+  background: rgba(196, 120, 58, 0.12);
+  border-color: rgba(196, 120, 58, 0.45);
+  color: var(--brass-deep);
+  white-space: nowrap;
+}
+
+/* Tuner 開啟：亮綠燈樣式，文字維持「Tuner 調音器」 */
+.btn.tuner.active {
+  background: radial-gradient(circle at 35% 28%, #b8ff9a, #3ddc6a 48%, #1aa84a 100%);
+  border-color: #0f8a3a;
+  color: #063517;
+  font-weight: 700;
+  box-shadow:
+    0 0 10px rgba(61, 220, 106, 0.95),
+    0 0 22px rgba(40, 200, 80, 0.55),
+    inset 0 1px 2px rgba(255, 255, 255, 0.55);
+}
+
+.stage {
+  position: relative;
+  padding: 1.6rem 1.4rem 1.4rem;
+  border: 1px solid rgba(180, 120, 70, 0.22);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #fff6ec 0%, #f7e6d2 100%);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.beat-lights {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* 原間距再各加 2 個字元寬 */
+  gap: calc(2ch + clamp(0.45rem, 1.6vw, 0.75rem));
+  margin: 0 auto 0.85rem;
+}
+
+.beat-lamp {
+  width: clamp(0.72rem, 2.2vw, 0.95rem);
+  height: clamp(0.72rem, 2.2vw, 0.95rem);
+  border-radius: 50%;
+  border: 1px solid rgba(40, 24, 10, 0.28);
+  box-sizing: border-box;
+  transition: background 80ms linear, box-shadow 80ms linear, filter 80ms linear;
+}
+
+/* 節拍器關閉：原色加深加暗 */
+.beat-lamp.beat-1 {
+  background: radial-gradient(circle at 35% 30%, #c45a16, #6a2e08 72%);
+  box-shadow: inset 0 1px 2px rgba(255, 200, 120, 0.15), 0 1px 2px rgba(0, 0, 0, 0.22);
+  filter: brightness(0.72) saturate(0.85);
+}
+
+.beat-lamp.beat-2,
+.beat-lamp.beat-3,
+.beat-lamp.beat-4 {
+  background: radial-gradient(circle at 35% 30%, #d4b830, #6e5a10 72%);
+  box-shadow: inset 0 1px 2px rgba(255, 240, 160, 0.18), 0 1px 2px rgba(0, 0, 0, 0.2);
+  filter: brightness(0.7) saturate(0.8);
+}
+
+/* 節拍器點亮 */
+.beat-lamp.beat-1.on {
+  background: radial-gradient(circle at 35% 28%, #ffc078, #ff8a1a 45%, #e86500 100%);
+  box-shadow:
+    0 0 10px rgba(255, 138, 26, 0.95),
+    0 0 22px rgba(255, 120, 20, 0.55),
+    inset 0 1px 2px rgba(255, 255, 255, 0.45);
+  filter: brightness(1.08) saturate(1.15);
+}
+
+.beat-lamp.beat-2.on,
+.beat-lamp.beat-3.on,
+.beat-lamp.beat-4.on {
+  background: radial-gradient(circle at 35% 28%, #fff3a8, #ffe14a 48%, #e6c41a 100%);
+  box-shadow:
+    0 0 10px rgba(255, 225, 74, 0.95),
+    0 0 22px rgba(230, 196, 26, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  filter: brightness(1.1) saturate(1.2);
+}
+
+.stage-main {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.pitch-written-wrap {
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.pitch-written-wrap .pitch.written {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12em;
+  line-height: 1.15;
+}
+
+.pitch-written-wrap .pitch-name {
+  display: block;
+}
+
+.label {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--muted-soft);
+  margin-bottom: 0.25rem;
+}
+
+.pitch {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 3.5vw, 2.15rem);
+  font-weight: 700;
+}
+
+.solfege {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.5em;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 0;
+  line-height: 1.25;
+}
+
+.fingering-stage {
+  position: relative;
+  min-height: 14rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+  padding: 0.5rem 0.25rem 0.5rem;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.fingering-main {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 勿設 overflow-x:hidden（會連帶裁切 y，切到長笛上方 Ab 鍵） */
+  overflow: visible;
+}
+
+/* 實音：相對整個 stage 置左置底，貼近底部框架 */
+.pitch-concert-float {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  width: clamp(2.9rem, 9.5vw, 4.6rem);
+  height: clamp(2.9rem, 9.5vw, 4.6rem);
+  padding: clamp(0.18rem, 0.7vw, 0.28rem);
+  border-radius: 0.55rem;
+  background: rgba(196, 120, 58, 0.12);
+  border: 1px solid rgba(196, 120, 58, 0.42);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.08rem;
+  z-index: 3;
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pitch-concert-float .label {
+  flex: 0 0 auto;
+  font-size: clamp(0.48rem, 1.6vw, 0.58rem);
+  margin: 0;
+  line-height: 1;
+}
+
+.pitch-concert-float .pitch.concert {
+  flex: 1 1 auto;
+  width: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.72rem, 2.4vw, 0.9rem);
+  line-height: 1.15;
+  color: var(--brass-deep);
+  overflow: hidden;
+  text-align: center;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.stage.is-ww-split .stage-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.55rem 1rem;
+  align-items: center;
+}
+
+.stage.is-ww-split .fingering-stage {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  min-height: 16rem;
+  align-self: stretch;
+}
+
+.stage.is-ww-split .pitch-written-wrap {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  text-align: center;
+}
+
+.stage.is-ww-split .fingering-text {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  text-align: center;
+  padding: 0 0.35rem;
+  /* 比照小號/預設指法文字大小 */
+  font-size: clamp(0.88rem, 2.2vw, 1.15rem);
+}
+
+.stage.is-ww-split .pitch-written-wrap .pitch.written {
+  /* 比照小號譜面音大小 */
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+}
+
+.stage.is-ww-split .pitch-written-wrap .solfege {
+  font-size: 0.5em;
+}
+
+.stage.is-ww-split .woodwind-view {
+  width: min(100%, 14rem);
+  margin-inline: auto;
+  /* 桌面左右分欄：向中縫靠攏 */
+  transform: translateX(50px);
+}
+
+/* 豎笛/Alto/Tenor：可獨立水平/垂直拉伸按鍵圖 */
+.stage.is-ww-split .woodwind-view.ww-clarinet .ww-svg.clarinet-chart {
+  transform: scaleX(1.1);
+  transform-origin: center center;
+}
+
+.stage.is-ww-split .woodwind-view.ww-altoSax .ww-svg.sax-chart,
+.stage.is-ww-split .woodwind-view.ww-tenorSax .ww-svg.sax-chart {
+  transform: scaleX(1.1) scaleY(0.9);
+  transform-origin: center center;
+}
+
+/* 豎笛/Alto/Tenor：按鍵外框加粗 2px（原 1.8 → 3.8） */
+.stage.is-ww-split .ww-svg .ww-key {
+  stroke-width: 3.8;
+}
+
+.stage.is-ww-split .ww-svg .ww-key.open {
+  stroke-width: 3.8;
+}
+
+.stage.is-ww-split .ww-svg .ww-key.pressed {
+  stroke-width: 3.8;
+}
+
+@media (max-width: 700px) {
+  .stage.is-ww-split .stage-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .stage.is-ww-split .pitch-written-wrap,
+  .stage.is-ww-split .fingering-text {
+    width: 100%;
+    text-align: center;
+    margin: 0;
+  }
+  .stage.is-ww-split .fingering-stage {
+    width: 100%;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-self: stretch;
+  }
+  .stage.is-ww-split .fingering-main {
+    width: auto;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  /* 手機：取消桌面靠攏位移，直式樂器水平置中（豎笛管身已以 viewBox 光學置中） */
+  .stage.is-ww-split .woodwind-view {
+    width: 100%;
+    max-width: 16rem;
+    margin-inline: auto;
+    transform: none;
+    justify-items: center;
+  }
+  .stage.is-ww-split .woodwind-view .ww-legend {
+    justify-content: center;
+    width: 100%;
+  }
+  .stage.is-ww-split .woodwind-view.ww-clarinet .ww-svg.clarinet-chart {
+    transform: scaleX(1.1);
+    transform-origin: center center;
+    display: block;
+    margin-inline: auto;
+  }
+  .stage.is-ww-split .woodwind-view.ww-altoSax .ww-svg.sax-chart,
+  .stage.is-ww-split .woodwind-view.ww-tenorSax .ww-svg.sax-chart {
+    transform: scaleX(1.1) scaleY(0.9);
+    transform-origin: center center;
+    display: block;
+    margin-inline: auto;
+  }
+}
+
+/* —— Pistons —— */
+.valve-board {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.piston-cluster {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.55rem;
+  padding: 0.35rem 1.2rem 0.2rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.cross-tubes {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 58%;
+  height: 2.1rem;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cross-tube {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8f969e, #f4f7fa 42%, #a8b0b8 58%, #7e868f);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+
+.cross-tube.upper {
+  top: 0;
+}
+
+.cross-tube.lower {
+  bottom: 0;
+}
+
+.valve {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 4.6rem;
+}
+
+.casing {
+  position: relative;
+  width: 3.55rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.casing-rim {
+  width: 3.55rem;
+  height: 0.55rem;
+  border-radius: 0.28rem 0.28rem 0.12rem 0.12rem;
+  background: linear-gradient(180deg, #f7f9fb, #8a929b);
+  z-index: 2;
+}
+
+.casing-body {
+  width: 3.35rem;
+  height: 5.4rem;
+  margin-top: -0.08rem;
+  border-radius: 0.2rem 0.2rem 0.55rem 0.55rem;
+  background: linear-gradient(90deg, #6d757e, #e8eef3 34%, #f8fafc 48%, #5f6770);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
+}
+
+.bottom-cap {
+  width: 2.15rem;
+  height: 0.72rem;
+  margin-top: -0.18rem;
+  border-radius: 0.2rem 0.2rem 0.55rem 0.55rem;
+  background: linear-gradient(180deg, #d7dde4, #8b949e 55%, #5c646d);
+}
+
+.piston {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 3.35rem;
+  margin-bottom: -0.15rem;
+  transition: transform 0.18s ease;
+}
+
+.piston.down {
+  transform: translateY(1.15rem);
+}
+
+.finger-button {
+  width: 2.35rem;
+  height: 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(80, 90, 100, 0.45);
+  background:
+    radial-gradient(ellipse at 50% 28%, #f4f7fa 0%, #c5ccd4 40%, #8b949e 78%, #5c646d 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.55),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.35),
+    0 3px 6px rgba(0, 0, 0, 0.3);
+  transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.piston-stem {
+  width: 0.38rem;
+  flex: 1;
+  min-height: 1.7rem;
+  margin-top: -0.05rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6a727a, #d5dbe2 45%, #8b949e);
+  transition: background 0.18s ease;
+}
+
+.piston.down .finger-button {
+  border-color: rgba(120, 78, 22, 0.45);
+  background:
+    radial-gradient(ellipse at 50% 28%, #ffe7b0 0%, #e0b45a 38%, #b87a28 78%, #7a4f14 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 4px rgba(80, 45, 8, 0.45),
+    0 0 0 6px rgba(199, 146, 62, 0.16),
+    0 0 18px rgba(199, 146, 62, 0.45),
+    0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.piston.down .piston-stem {
+  background: linear-gradient(90deg, #8f6320, #e8c57a 35%, #f3dfa3 50%, #c7923e 70%, #6d4a16);
+}
+
+.valve-num {
+  margin-top: 0.55rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.valve[data-valve="1"] .casing::before {
+  content: "";
+  position: absolute;
+  left: -0.55rem;
+  top: 1.55rem;
+  width: 0.7rem;
+  height: 0.95rem;
+  border: 2px solid #aeb6be;
+  border-right: none;
+  border-radius: 0.7rem 0 0 0.7rem;
+  opacity: 0.85;
+}
+
+.valve[data-valve="3"] .casing::after {
+  content: "";
+  position: absolute;
+  right: -0.85rem;
+  top: 2.4rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid #b7bfc7;
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+/* —— Trombone（座標對齊 assets/generate_trombone.py） —— */
+.trombone-view {
+  width: min(100%, 42rem);
+  max-width: 100%;
+  display: grid;
+  gap: 0.55rem;
+  justify-items: center;
+  overflow-x: hidden;
+}
+
+.trombone-svg {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 16px rgba(44, 24, 16, 0.14));
+}
+
+.trombone-svg .tb-body {
+  stroke: rgba(120, 78, 22, 0.35);
+  stroke-width: 1.5;
+}
+
+.trombone-svg .tb-sheen {
+  pointer-events: none;
+}
+
+.trombone-svg .tb-inner,
+.trombone-svg .tb-inner-core,
+.trombone-svg .tb-outer {
+  transition: x 0.22s ease, width 0.22s ease;
+}
+
+.trombone-svg .tb-tick {
+  stroke: rgba(44, 24, 16, 0.32);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 10 8;
+}
+
+.trombone-svg .tb-tick.active {
+  stroke: rgba(160, 100, 28, 0.95);
+  stroke-width: 12;
+  stroke-dasharray: 14 8;
+}
+
+.trombone-svg .tb-pos-glow {
+  fill: rgba(240, 193, 74, 0.42);
+  stroke: none;
+}
+
+.trombone-svg .tb-pos-label {
+  fill: rgba(44, 24, 16, 0.48);
+  font-size: 42px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  dominant-baseline: central;
+  text-anchor: middle;
+}
+
+.trombone-svg .tb-pos.active .tb-pos-label {
+  fill: var(--brass-deep);
+  font-size: 64px;
+  font-weight: 800;
+}
+
+/* —— Woodwind (Yamaha-style silhouette) —— */
+.woodwind-view {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+  width: min(100%, 16rem);
+}
+
+.woodwind-view:has(.flute-chart),
+.woodwind-view:has(.flute-chart-wrap),
+.woodwind-view.ww-flute {
+  width: min(100%, 40rem);
+}
+
+/* 長笛：整塊靠近譜面唱名；圖與「空/按」間距 +10px；上方留白避免裁切 */
+.woodwind-view.ww-flute {
+  gap: calc(0.45rem + 10px);
+  margin-top: 0;
+  padding-top: 0.35rem;
+  justify-items: center;
+}
+
+/* 固定框架：整圖完整顯示（含上方 Ab 鍵＋金暈）、切換指法不跳動 */
+.flute-chart-frame {
+  width: min(100%, 42rem);
+  aspect-ratio: 990 / 248;
+  max-height: 16.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.ww-svg.flute-chart {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: transparent;
+  overflow: visible;
+  filter: drop-shadow(0 4px 10px rgba(44, 24, 16, 0.1));
+}
+
+.ww-svg.flute-chart .flute-body {
+  stroke: #2a3238;
+  stroke-width: 2.2;
+}
+
+.ww-svg.flute-chart .flute-body-sheen {
+  stroke: none;
+}
+
+.ww-svg.flute-chart .flute-embouchure-hole {
+  fill: #1a1e22;
+  stroke: none;
+}
+
+.ww-svg.flute-chart .flute-key {
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: fill 0.15s ease, stroke 0.15s ease, filter 0.15s ease;
+}
+
+/* 固定鍵：鐵灰（不可按） */
+.ww-svg.flute-chart .flute-key-fixed {
+  fill: #4a4f55;
+  stroke: #1a1e22;
+  stroke-width: 2.2;
+  filter: none;
+}
+
+/* 可變動鍵：空＝白；按＝金底＋深金框＋淡金光暈（比照豎笛/薩克斯） */
+.ww-svg.flute-chart .flute-key.open {
+  fill: #ffffff;
+  stroke: #1a1410;
+  stroke-width: 2.2;
+  filter: none;
+}
+
+.ww-svg.flute-chart .flute-key.pressed {
+  fill: url(#fluteKeyGold);
+  stroke: #6d4510;
+  stroke-width: 3.4;
+}
+
+.woodwind-view.ww-flute .ww-swatch.open {
+  background: #ffffff;
+  border-color: #1a1410;
+  box-shadow: none;
+}
+
+.woodwind-view.ww-flute .ww-swatch.pressed {
+  background: linear-gradient(180deg, #ffe7b0 0%, #e8c56a 35%, #c7923e 72%, #8a5a14 100%);
+  border-color: #6d4510;
+  box-shadow: 0 0 10px rgba(240, 193, 74, 0.7);
+}
+
+.ww-legend {
+  display: flex;
+  gap: 0.9rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ww-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ww-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 1.5px solid rgba(20, 32, 28, 0.75);
+}
+
+/* 木管：空鍵＝灰白；按鍵＝黑＋微亮金暈（見 .cursor/rules/woodwind-key-colors.mdc） */
+.ww-swatch.open {
+  background: #f2efe6;
+  border-color: #3a3428;
+}
+
+.ww-swatch.pressed {
+  background: #14100a;
+  box-shadow: 0 0 10px rgba(240, 193, 74, 0.7);
+}
+
+/* 豎笛/Alto/Tenor：圖例「空/按」對齊實際按鍵（白空/金按） */
+.woodwind-view.ww-clarinet .ww-swatch.open,
+.woodwind-view.ww-altoSax .ww-swatch.open,
+.woodwind-view.ww-tenorSax .ww-swatch.open {
+  background: #ffffff;
+  border-color: #1a1410;
+  box-shadow: none;
+}
+
+.woodwind-view.ww-clarinet .ww-swatch.pressed,
+.woodwind-view.ww-altoSax .ww-swatch.pressed,
+.woodwind-view.ww-tenorSax .ww-swatch.pressed {
+  background: linear-gradient(180deg, #ffe7b0 0%, #e8c56a 35%, #c7923e 72%, #8a5a14 100%);
+  border-color: #6d4510;
+  box-shadow: 0 0 10px rgba(240, 193, 74, 0.7);
+}
+
+.ww-svg {
+  width: min(100%, 9.5rem);
+  height: auto;
+  max-height: 17rem;
+}
+
+.ww-svg .ww-body {
+  fill: #c4a35a;
+  stroke: #2a2214;
+  stroke-width: 2;
+}
+
+.ww-svg .ww-body-plate {
+  fill: #d8b56a;
+  stroke: #8a6a2e;
+  stroke-width: 1.2;
+}
+
+.ww-svg .ww-split {
+  stroke: rgba(44, 24, 16, 0.25);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.ww-svg .ww-key-label {
+  fill: rgba(44, 24, 16, 0.65);
+  font-size: 9px;
+  font-family: var(--font-body);
+}
+
+.ww-svg.sax-chart {
+  width: min(100%, 10.5rem);
+  max-height: 30rem;
+  background: transparent;
+  border-radius: 0.65rem;
+  padding: 0.4rem;
+}
+
+.ww-svg.clarinet-chart {
+  width: min(100%, 9.6rem);
+  max-height: 30rem;
+  background: transparent;
+  border-radius: 0.65rem;
+  padding: 0.35rem;
+}
+
+.ww-svg.clarinet-chart .ww-body-fill {
+  fill-opacity: 0.98;
+}
+
+.ww-svg.clarinet-chart .ww-body-grain {
+  fill-opacity: 0.55;
+}
+
+/* 豎笛/Alto/Tenor：空鍵白；按下＝亮金底、深金粗框、淡金光暈 */
+.ww-svg.clarinet-chart .ww-key.open,
+.ww-svg.sax-chart .ww-key.open {
+  fill: #ffffff;
+  stroke: #1a1410;
+  stroke-width: 2.2;
+}
+
+.ww-svg.clarinet-chart .ww-key.pressed {
+  fill: url(#clarinetKeyGold);
+  stroke: #6d4510;
+  stroke-width: 3.4;
+}
+
+.ww-svg.sax-chart .ww-key.pressed {
+  fill: url(#saxKeyGold);
+  stroke: #6d4510;
+  stroke-width: 3.4;
+}
+
+.ww-svg .ww-body-fill {
+  fill-opacity: 0.4;
+  stroke: none;
+}
+
+.ww-svg .ww-body-fill.sax-body {
+  fill-opacity: 0.36;
+}
+
+.ww-svg .ww-body-grain {
+  fill-opacity: 1;
+  stroke: none;
+}
+
+.ww-svg .ww-body-line {
+  stroke: #14100a;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+/* 法國號梯形活塞（Horn valves.py；金屬質感比照小號活塞） */
+.horn-valve-board {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 0.9rem 0 1.1rem;
+}
+
+.horn-valve-svg {
+  width: min(100%, 16rem);
+  height: auto;
+  overflow: visible;
+}
+
+.horn-valve {
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  transition: stroke 0.18s ease, fill 0.18s ease;
+}
+
+.horn-valve.open {
+  fill: #d8dde3;
+  stroke: rgba(90, 100, 110, 0.5);
+}
+
+.horn-valve.pressed {
+  stroke: rgba(120, 78, 22, 0.55);
+}
+
+.horn-valve-num {
+  fill: var(--ink);
+  font-size: 12px;
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+
+.ww-svg .ww-key {
+  stroke: #0a0806;
+  stroke-width: 1.8;
+  transition: fill 0.15s ease, filter 0.15s ease, stroke 0.15s ease;
+}
+
+.ww-svg .ww-key.open {
+  fill: #f2efe6;
+  stroke: #2a2418;
+  filter: none;
+}
+
+.ww-svg .ww-key.pressed {
+  fill: #14100a;
+  stroke: #c9a25a;
+}
+
+/* 長笛：空＝白；按＝金；固定＝鐵灰；管身金屬灰 */
+.ww-svg .ww-cap {
+  fill: rgba(20, 32, 28, 0.55);
+  font-size: 11px;
+  font-family: var(--font-body);
+}
+
+/* —— Piano —— */
+.piano-view {
+  width: min(100%, 32rem);
+  padding: 0.5rem 0;
+}
+
+.piano-keys {
+  position: relative;
+  display: flex;
+  height: 7.5rem;
+  border-radius: 0.4rem;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.piano-key {
+  flex: 1;
+  background: linear-gradient(180deg, #f7f4ec, #e4dfd2);
+  border: 1px solid #b9b2a4;
+  border-radius: 0 0 0.25rem 0.25rem;
+  position: relative;
+}
+
+.piano-key.black {
+  position: absolute;
+  width: 7.2%;
+  height: 62%;
+  background: linear-gradient(180deg, #3a3a3a, #111);
+  border-color: #000;
+  z-index: 2;
+  border-radius: 0 0 0.2rem 0.2rem;
+}
+
+.piano-key.active {
+  background: linear-gradient(180deg, #ffe7b0, #c7923e);
+  box-shadow: inset 0 0 0 2px rgba(143, 99, 32, 0.5), 0 0 16px rgba(199, 146, 62, 0.45);
+}
+
+.piano-key.black.active {
+  background: linear-gradient(180deg, #e0b45a, #6d4a16);
+}
+
+.fingering-text {
+  margin: 0;
+  font-size: clamp(0.88rem, 2.2vw, 1.15rem);
+  font-weight: 600;
+  color: var(--brass);
+  line-height: 1.45;
+}
+
+.progress {
+  margin: 0.85rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted-soft);
+}
+
+.controls {
+  margin-top: 1.4rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid rgba(140, 90, 45, 0.28);
+  background: #fff8f0;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.7rem 1.15rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.btn:hover {
+  background: #fff4e8;
+  border-color: rgba(180, 110, 50, 0.45);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.primary {
+  min-width: 8.5rem;
+  background: linear-gradient(180deg, var(--cta-hi) 0%, var(--cta-mid) 52%, var(--cta-lo) 100%);
+  border-color: rgba(120, 55, 40, 0.28);
+  color: var(--cta-ink);
+  box-shadow:
+    0 10px 22px var(--cta-glow),
+    inset 0 1px 0 rgba(255, 248, 240, 0.38);
+}
+
+.btn.primary:hover {
+  filter: brightness(1.04);
+  box-shadow:
+    0 12px 26px rgba(154, 82, 64, 0.32),
+    inset 0 1px 0 rgba(255, 248, 240, 0.45);
+}
+
+#btnPlay {
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 8.75rem;
+  max-width: none;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.btn.ghost {
+  min-width: 3rem;
+}
+
+#btnStop {
+  min-width: 3.15rem;
+  min-height: 3.15rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider-field,
+.select-field {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+}
+
+.slider-field strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--brass);
+}
+
+.slider-field em {
+  font-style: normal;
+  color: var(--muted);
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--brass);
+}
+
+.tempo-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  justify-content: center;
+}
+
+.tempo-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  border: 1px solid rgba(140, 90, 45, 0.22);
+  background: rgba(255, 248, 240, 0.8);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.tempo-chip-name {
+  font: inherit;
+  font-size: inherit;
+}
+
+.tempo-chip small {
+  opacity: 0.65;
+  margin-left: 0.25rem;
+  font-size: 0.75em;
+}
+
+.tempo-chip.active,
+.tempo-chip:hover {
+  border-color: var(--brass);
+  color: var(--brass-deep);
+  background: rgba(196, 120, 58, 0.14);
+}
+
+.field-label {
+  font-size: 0.92rem;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid rgba(140, 90, 45, 0.35);
+  border-radius: 999px;
+  overflow: hidden;
+  /* 實心底，避免粉感背景透出 */
+  background: #fff8f0;
+}
+
+.segmented label {
+  cursor: pointer;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented span {
+  display: block;
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+/* 選中：實心暖沙金，對粉／米色背景對比清楚（同音鈕選中語彙） */
+.segmented input:checked + span {
+  background: #e0b070;
+  color: #5c3010;
+}
+
+.option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.beats-row {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.55rem;
+}
+
+.beats-segmented {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.beats-segmented label {
+  min-width: 0;
+}
+
+.beats-segmented span {
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  padding: 0.5rem 0.35rem;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+
+.check.compact {
+  font-size: 0.88rem;
+}
+
+.select-field {
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+select {
+  font: inherit;
+  color: var(--ink);
+  background: #fff8f0;
+  border: 1px solid rgba(140, 90, 45, 0.28);
+  border-radius: 0.55rem;
+  padding: 0.4rem 0.65rem;
+}
+
+.note-strip {
+  margin-top: 1.5rem;
+  padding-bottom: 0.25rem;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.strip-mode-row {
+  width: 100%;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 0.75rem;
+}
+
+.strip-mode-segmented {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.strip-mode-segmented label {
+  min-width: 0;
+  text-align: center;
+}
+
+.strip-mode-segmented span {
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  padding: 0.5rem 0.35rem;
+}
+
+.strip {
+  --strip-gap: 0.45rem;
+  --strip-cols: 7;
+  display: flex;
+  flex-direction: column;
+  gap: var(--strip-gap);
+  width: 100%;
+}
+
+.strip-row {
+  display: flex;
+  gap: var(--strip-gap);
+  width: 100%;
+}
+
+.strip-row-bottom {
+  justify-content: center;
+}
+
+.note-chip {
+  appearance: none;
+  border: 1px solid rgba(140, 90, 45, 0.2);
+  background: #fff8f0;
+  color: var(--ink);
+  border-radius: 0.7rem;
+  padding: 0.45rem 0.2rem;
+  box-sizing: border-box;
+  flex: 0 0 calc((100% - (var(--strip-cols) - 1) * var(--strip-gap)) / var(--strip-cols));
+  width: calc((100% - (var(--strip-cols) - 1) * var(--strip-gap)) / var(--strip-cols));
+  min-width: 0;
+  font: inherit;
+  /* 隨視窗縮放，允許換行，避免 C♯/D♭ 被截成 … */
+  font-size: clamp(0.52rem, 1.35vw + 0.35rem, 0.92rem);
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.55em;
+}
+
+.note-chip.active {
+  background: #e0b070;
+  border-color: var(--brass);
+  color: #5c3010;
+}
+
+.meta {
+  margin-top: 1.75rem;
+  color: var(--muted-soft);
+  font-size: 0.82rem;
+}
+
+.meta p {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .flow-layer.app {
+    width: min(100% - 1.5rem, 920px);
+  }
+
+  .home-gate-text {
+    letter-spacing: 0.16em;
+    font-size: clamp(1rem, 4.2vw, 1.35rem);
+  }
+
+  .home-hero {
+    padding-bottom: 4.5rem;
+  }
+
+  .flute-chart-frame {
+    max-height: 13rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .instrument-grid {
+    gap: 0.45rem;
+  }
+
+  .instrument-pick {
+    min-height: 2.75rem;
+    padding: 0.65rem 0.45rem;
+    font-size: 0.9rem;
+  }
+
+  .brand-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .app {
+    width: min(100% - 1.25rem, 920px);
+    padding: 1.25rem 0 2.25rem;
+  }
+
+  .home-credit {
+    width: min(36rem, calc(100% - 1.5rem));
+    bottom: max(0.55rem, env(safe-area-inset-bottom, 0px));
+    line-height: 1.6;
+  }
+
+  .home-enter,
+  .menu-action {
+    min-height: 2.85rem;
+    width: min(100%, 18rem);
+  }
+
+  .btn.primary {
+    min-height: 2.85rem;
+  }
+
+  #btnPlay {
+    width: max-content;
+    min-width: 8.75rem;
+    white-space: nowrap;
+  }
+
+  .home-title {
+    font-size: clamp(1.45rem, 7vw, 2rem);
+  }
+
+  .home-lede {
+    font-size: 0.92rem;
+    letter-spacing: 0.06em;
+  }
+
+  .home-logo {
+    width: min(22rem, 92%);
+    margin-bottom: 0.9rem;
+  }
+
+  .pitch-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .piston-cluster {
+    gap: 1rem;
+    padding-inline: 0.85rem;
+  }
+
+  .valve {
+    width: 3.7rem;
+  }
+
+  .casing-body {
+    width: 2.8rem;
+    height: 4.5rem;
+  }
+
+  .option-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .transport {
+    gap: 0.5rem;
+  }
+
+  .btn {
+    min-height: 2.75rem;
+  }
+
+  /* 手機：上排 3、下排 2，整組置中 */
+  .tempo-marks {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.45rem;
+    justify-content: center;
+  }
+
+  .tempo-chip {
+    grid-column: span 2;
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    padding: 0.35rem 0.4rem;
+    font-size: 0.72rem;
+  }
+
+  .tempo-chip:nth-child(4) {
+    grid-column: 2 / 4;
+  }
+
+  .tempo-chip:nth-child(5) {
+    grid-column: 4 / 6;
+  }
+
+  .note-strip {
+    --strip-cols: 4;
+  }
+
+  .flute-chart-frame {
+    max-height: 11.5rem;
+    width: 100%;
+  }
+
+  .basics-panel {
+    max-height: calc(100dvh - 1.25rem);
+    gap: 0.45rem;
+  }
+
+  .video-frame {
+    max-height: min(36vh, 14rem);
+  }
+
+  .meta {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .instrument-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .note-strip {
+    --strip-cols: 3;
+  }
+
+  .home-gate-text {
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piston,
+  .btn,
+  .note-chip,
+  .trombone-svg .tb-inner,
+  .trombone-svg .tb-inner-core,
+  .trombone-svg .tb-outer {
+    transition: none;
+  }
+}

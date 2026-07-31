@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <title>Architecture review — 瑞瑞老師的管樂教室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      .seam { stroke-dasharray: 4 4; }
+      .leak { stroke: #dc2626; }
+      .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .mass-iface { background: #fde68a; border: 2px solid #b45309; }
+      .mass-impl { background: #e2e8f0; border: 2px solid #475569; }
+      .mass-deep-impl { background: #0f172a; color: #e2e8f0; border: 2px solid #0f172a; }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+      <header class="space-y-4 border-b border-stone-200 pb-8">
+        <p class="text-xs uppercase tracking-wider text-stone-500">Architecture review</p>
+        <h1 class="font-serif text-3xl text-slate-900">瑞瑞老師的管樂教室</h1>
+        <p class="text-sm text-stone-600">聚焦 <code class="font-mono text-xs bg-stone-200 px-1 rounded">index.html</code> 與其所載 module · 2026-07-31 · 無 CONTEXT.md / ADR</p>
+        <ul class="flex flex-wrap gap-4 text-xs text-stone-600">
+          <li class="flex items-center gap-2"><span class="inline-block w-4 h-4 border-2 border-slate-800 bg-white"></span> module</li>
+          <li class="flex items-center gap-2"><span class="inline-block w-8 border-t-2 border-dashed border-slate-500"></span> seam</li>
+          <li class="flex items-center gap-2"><span class="inline-block w-8 border-t-2 border-red-600"></span> leakage</li>
+          <li class="flex items-center gap-2"><span class="inline-block w-4 h-4 deep"></span> deep module</li>
+        </ul>
+        <p class="text-xs text-stone-500 font-mono">index.html 228 · app.js 2054 · instruments.js 470 · styles.css 2156 · self-check.js 369</p>
+      </header>
+
+      <section id="candidates" class="space-y-10">
+
+        <!-- 1 -->
+        <article id="c1" class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm space-y-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <h2 class="font-serif text-2xl">Deepen practice timing</h2>
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">Strong</span>
+              <span class="text-xs uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">in-process</span>
+            </div>
+          </div>
+          <p class="font-mono text-sm text-stone-600">app.js — buildSequence, buildBeatPlan, tick, toneBeatsForPlanBeats · self-check.js — duplicated buildBeatPlan</p>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <p class="text-xs uppercase tracking-wider text-stone-500 mb-2">Before</p>
+              <pre class="mermaid">
+flowchart TB
+  DOM["DOM els.tempo / direction"] --> MIX["mixed helpers + tick"]
+  MIX --> AUDIO["audio side effects"]
+  MIX -.leak.-> SC["self-check copy of plan"]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class MIX,SC leak
+              </pre>
+            </div>
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <p class="text-xs uppercase tracking-wider text-stone-500 mb-2">After</p>
+              <pre class="mermaid">
+flowchart TB
+  UI["UI adapter: numbers in"] --> PT["PracticeTiming deep"]
+  PT --> PLAY["Playback adapter"]
+  TEST["tests"] --> PT
+  classDef deep fill:#0f172a,color:#e2e8f0,stroke:#0f172a;
+  class PT deep
+              </pre>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Problem</h3>
+              <p>Timing module 仍從 DOM 讀取；tick 把 schedule、audio、UI 綁在一起；測試只能 fork implementation。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Solution</h3>
+              <p>純輸入（音數、方向、模式、拍數、BPM）進一個 deep module，輸出 sequence／beat plan／時長。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Wins</h3>
+              <ul class="list-disc pl-4 space-y-1">
+                <li>locality: 4/4 收束規則一處</li>
+                <li>leverage: play／step／tests 共用</li>
+                <li>interface 即測試面</li>
+                <li>刪除 fork 的 buildBeatPlan</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 2 -->
+        <article id="c2" class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm space-y-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <h2 class="font-serif text-2xl">Deepen fingering presentation</h2>
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">Strong</span>
+              <span class="text-xs uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">in-process</span>
+            </div>
+          </div>
+          <p class="font-mono text-sm text-stone-600">instruments.js · app.js ~L783–1399 render* · styles.css .ww-key / piston</p>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-4 space-y-3">
+              <p class="text-xs uppercase tracking-wider text-stone-500">Before — mass</p>
+              <div class="space-y-2">
+                <div class="mass-iface rounded px-3 py-2 text-xs uppercase tracking-wider">BandInstruments interface（深）</div>
+                <div class="mass-impl rounded px-3 py-6 text-xs uppercase tracking-wider text-center">domain notes / keys</div>
+                <div class="mass-iface rounded px-3 py-5 text-xs uppercase tracking-wider">app.js render* interface ≈ 寬</div>
+                <div class="mass-impl rounded px-3 py-3 text-xs uppercase tracking-wider text-center text-stone-500">SVG paths 塞在 app shell</div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-4 space-y-3">
+              <p class="text-xs uppercase tracking-wider text-stone-500">After — mass</p>
+              <div class="space-y-2">
+                <div class="mass-iface rounded px-3 py-2 text-xs uppercase tracking-wider">FingeringView：note + ui → markup</div>
+                <div class="mass-deep-impl deep rounded px-3 py-10 text-xs uppercase tracking-wider text-center">geometry · glow defs · family charts</div>
+                <div class="mass-iface rounded px-3 py-2 text-xs uppercase tracking-wider text-stone-500">app 只 mount #fingeringStage</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Problem</h3>
+              <p>Domain 已深；presentation 的大 implementation 卡在 app shell，改一鍵要 bounce 四檔。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Solution</h3>
+              <p>一個 presentation module 吃 note + instrument ui，回傳 markup；路徑座標藏進 implementation。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Wins</h3>
+              <ul class="list-disc pl-4 space-y-1">
+                <li>locality: 指法外觀一處</li>
+                <li>leverage: display／strip／切換共用</li>
+                <li>可不開整顆 IIFE 測 pressed set</li>
+                <li>刪除測試通過 deletion test</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 3 -->
+        <article id="c3" class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm space-y-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <h2 class="font-serif text-2xl">One flow module for layers</h2>
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-100 text-amber-900">Worth exploring</span>
+              <span class="text-xs uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">in-process</span>
+            </div>
+          </div>
+          <p class="font-mono text-sm text-stone-600">index.html #layer* · app.js showLayer / state.flowLayer · styles.css body[data-flow]</p>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <p class="text-xs uppercase tracking-wider text-stone-500 mb-2">Before</p>
+              <pre class="mermaid">
+flowchart LR
+  HTML["index.html layers"] --> BTN["button handlers"]
+  BTN --> SL["showLayer"]
+  SL -.leak.-> BGM["BGM fade"]
+  SL -.leak.-> YT["pause YouTube"]
+  SL --> CSS["body data-flow"]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class BGM,YT leak
+              </pre>
+            </div>
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <p class="text-xs uppercase tracking-wider text-stone-500 mb-2">After</p>
+              <pre class="mermaid">
+flowchart LR
+  BTN2["buttons"] --> FLOW["Flow.go name"]
+  FLOW --> DOMA["DOM layer adapter"]
+  FLOW --> BGMA["BGM policy"]
+  FLOW --> PRAC["practice halt"]
+  classDef deep fill:#0f172a,color:#e2e8f0,stroke:#0f172a;
+  class FLOW deep
+              </pre>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Problem</h3>
+              <p>「進教室」跨 HTML／showLayer／BGM／CSS；leave side effects 從 seam 漏出到各 handler。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Solution</h3>
+              <p>Flow module：只請求目的地；leave/enter 順序（練習停、基礎課暫停、首頁 BGM）進 implementation。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Wins</h3>
+              <ul class="list-disc pl-4 space-y-1">
+                <li>locality: 導覽不變量</li>
+                <li>leverage: 所有返回鈕共用</li>
+                <li>少漏停 tuner／playback</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 4 -->
+        <article id="c4" class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm space-y-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <h2 class="font-serif text-2xl">Untangle practice audio from home BGM</h2>
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-100 text-amber-900">Worth exploring</span>
+              <span class="text-xs uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800">local-substitutable</span>
+            </div>
+          </div>
+          <p class="font-mono text-sm text-stone-600">app.js Web Audio + homeBgm · index.html #homeBgm · transport / tuner / flow call sites</p>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-stone-500 mb-3">Before — cross-section</p>
+              <div class="space-y-1">
+                <div class="h-10 border-l-4 border-red-500 bg-red-50 px-3 flex items-center text-xs uppercase tracking-wider">tick 碰 osc</div>
+                <div class="h-10 border-l-4 border-red-500 bg-red-50 px-3 flex items-center text-xs uppercase tracking-wider">tuner 碰同 gain</div>
+                <div class="h-10 border-l-4 border-red-500 bg-red-50 px-3 flex items-center text-xs uppercase tracking-wider">BGM HTMLAudio 混在同一 blob</div>
+                <div class="h-10 border-l-4 border-red-500 bg-red-50 px-3 flex items-center text-xs uppercase tracking-wider">flow 必須知 stop 順序</div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-stone-500 mb-3">After — cross-section</p>
+              <div class="space-y-1">
+                <div class="h-16 border-l-4 border-slate-900 bg-slate-900 text-stone-100 px-3 flex items-center text-xs uppercase tracking-wider">PracticeAudio：tone · click · tuner · unlock</div>
+                <div class="h-12 border-l-4 border-amber-700 bg-amber-50 px-3 flex items-center text-xs uppercase tracking-wider">HomeBgm：timeline only</div>
+                <div class="h-10 border-l-4 border-stone-300 bg-white px-3 flex items-center text-xs uppercase tracking-wider text-stone-500">transport / flow 只呼叫 interface</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Problem</h3>
+              <p>Caller 必須知道 stopTuner／stopPlayback／fade BGM 的順序——interface 幾乎等於 implementation。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Solution</h3>
+              <p>PracticeAudio deep module + 獨立小 HomeBgm；可注入 AudioContext／clock 作 adapter。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Wins</h3>
+              <ul class="list-disc pl-4 space-y-1">
+                <li>locality: unlock／resume</li>
+                <li>leverage: play／step／tuner</li>
+                <li>少依賴 regex 測 1600/900</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 5 -->
+        <article id="c5" class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm space-y-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <h2 class="font-serif text-2xl">Re-aim self-check at real seams</h2>
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">Strong</span>
+              <span class="text-xs uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">in-process</span>
+            </div>
+          </div>
+          <p class="font-mono text-sm text-stone-600">self-check.js · BandInstruments（已有行為測試）· 缺 PracticeTiming / FingeringView</p>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <p class="text-xs uppercase tracking-wider text-stone-500 mb-2">Before</p>
+              <pre class="mermaid">
+flowchart TB
+  SC["self-check"] --> BAND["vm BandInstruments"]
+  SC --> FORK["forked buildBeatPlan"]
+  SC --> RX["regex app/html/css"]
+  RX -.leak.-> PRIV["private names as interface"]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class RX,PRIV leak
+              </pre>
+            </div>
+            <div class="rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <p class="text-xs uppercase tracking-wider text-stone-500 mb-2">After</p>
+              <pre class="mermaid">
+flowchart TB
+  SC2["self-check"] --> BAND2["BandInstruments"]
+  SC2 --> PT2["PracticeTiming"]
+  SC2 --> FV["FingeringView"]
+  SC2 --> ASSET["few asset smokes"]
+  classDef deep fill:#0f172a,color:#e2e8f0,stroke:#0f172a;
+  class PT2,FV,BAND2 deep
+              </pre>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Problem</h3>
+              <p>~158 regex 把 private 字串當 interface——shallow，且阻擋 deepening（改名就紅）。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Solution</h3>
+              <p>行為期望對準 deepened module 的 interface；replace-don’t-layer，刪掉對 implementation 的 regex。</p>
+            </div>
+            <div>
+              <h3 class="text-xs uppercase tracking-wider text-stone-500 mb-1">Wins</h3>
+              <ul class="list-disc pl-4 space-y-1">
+                <li>leverage: refactor 仍綠</li>
+                <li>locality: 失敗指向規則</li>
+                <li>解鎖 candidate 1–2</li>
+              </ul>
+            </div>
+          </div>
+          <p class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">單獨做只是搬痛點；應作為 #1／#2 的 follow-through。</p>
+        </article>
+
+      </section>
+
+      <section id="top-recommendation" class="rounded-2xl border-2 border-slate-900 bg-slate-900 text-stone-100 p-8 space-y-3">
+        <p class="text-xs uppercase tracking-wider text-stone-400">Top recommendation</p>
+        <h2 class="font-serif text-2xl"><a href="#c1" class="underline decoration-emerald-400/60 hover:decoration-emerald-300">Deepen practice timing</a> + retarget self-check</h2>
+        <p class="text-stone-300 text-sm">純 in-process、已有 duplicated beat-plan 證據、deletion test 通過；先縮小 interface，再讓 self-check 走同一 seam，接著才值得拆 ~700 LOC 的 fingering presentation。</p>
+      </section>
+    </main>
+  </body>
+</html>
